@@ -10,17 +10,16 @@ class rrt_tree(object):
         self.tree = Tree()
         self.node_count = 0
         self.space = space
-        self.add_node(space.start[0], space.start[1])
+        self.add_node(space.start)
 
-    def add_node(self, a: float, b: float):
+    def add_node(self, pose: np.ndarray):
         self.node_count += 1
         nid = f"Node {self.node_count}"
-        pose = np.array([a, b])
-        steered_pose = pose.copy
+        steered_pose = pose
 
         if self.tree.size() == 0:
             self.tree.create_node(nid, nid, data=ArrayHolder(pose))
-            return nid
+            return pose, nid
         else:
             parent_node = None
             min_distance = np.finfo(np.float64).max
@@ -36,7 +35,9 @@ class rrt_tree(object):
                 ):
                     min_distance = d
                     parent_node = node
-                    steered_pose = steer(parent_node.data.array, pose, self.space.step_size)
+                    steered_pose = steer(
+                        parent_node.data.array, pose, self.space.step_size
+                    )
 
             self.tree.create_node(
                 nid,
@@ -45,10 +46,14 @@ class rrt_tree(object):
                 data=ArrayHolder(steered_pose),
             )
 
-            return nid
+            return steered_pose, nid
 
     def path_to_node(self, node_nid: str):
-        return Tree.rsearch(self.tree, nid=node_nid)
+        poses = []
+        for nid in self.tree.rsearch(nid=node_nid):
+            node = self.tree[nid]  # guaranteed to be a Node
+            poses.append(node.data.array)
+        return poses
 
     def show(self, data_property: Optional[str] = None):
         return self.tree.show(data_property=data_property)
