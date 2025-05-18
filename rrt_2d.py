@@ -1,13 +1,14 @@
 from algorithm.rrt_algorithm import RRT
+from utilities.plot import plot_rrt
 from utilities.world_space import space
 import numpy as np
 
 dimensions = np.array([100, 100])
-start = np.array([0, 0])
-goal = np.array([100, 100])
+start = np.array([50, 50])
+goal = np.array([70, 70])
 goal_radius = 5
-step_size = 2
-n_samples = 1000
+step_size = 5
+n_samples = 5000
 
 rrt_space = space(
     dimensions=dimensions,
@@ -19,10 +20,12 @@ rrt_space = space(
 
 rrt_algorithm = RRT(rrt_space)
 
-poses = rrt_algorithm.execute() or []
+tree, path_to_goal = rrt_algorithm.execute() or []
 
-for p in poses:
-    print(p)
+if (path_to_goal is None):
+    print("No solution found. Try again next time. ")
+else:
+    plot_rrt(tree, path_to_goal)
 
 # tree = rrt_tree(rrt_space)
 # tree.add_node(100, 0)

@@ -1,13 +1,12 @@
 import numpy as np
 from algorithm.tree import rrt_tree
 from utilities.world_space import space
-from utilities.geometry import dist_between_points
 
 
 class RRT(object):
     def __init__(self, space: space):
         self.space = space
-        self.tree = rrt_tree(space)
+        self.rrt_tree = rrt_tree(space)
 
     def execute(self):
         np.random.seed(1)
@@ -19,7 +18,8 @@ class RRT(object):
                 ]
             )
 
-            steered_pose, nid = self.tree.add_node(pose)
+            steered_pose, nid = self.rrt_tree.add_node(pose)
 
             if self.space.close_to_goal(steered_pose):
-                return self.tree.path_to_node(nid)
+                return self.rrt_tree.tree, self.rrt_tree.path_to_node(nid)
+        return self.rrt_tree.tree, None

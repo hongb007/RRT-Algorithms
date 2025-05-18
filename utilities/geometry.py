@@ -26,8 +26,8 @@ def steer(start: np.ndarray, goal: np.ndarray, step_size: float) -> np.ndarray:
     if total_dist <= step_size:
         return goal
 
-    x_dist = np.abs(start[0] - goal[0])
-    y_dist = np.abs(start[1] - goal[1])
+    x_dist = start[0] - goal[0]
+    y_dist = start[1] - goal[1]
 
     step_x = step_size * x_dist / total_dist
     step_y = step_size * y_dist / total_dist

@@ -48,12 +48,16 @@ class rrt_tree(object):
 
             return steered_pose, nid
 
-    def path_to_node(self, node_nid: str):
+    def poses_to_node(self, node_nid: str):
         poses = []
         for nid in self.tree.rsearch(nid=node_nid):
             node = self.tree[nid]  # guaranteed to be a Node
             poses.append(node.data.array)
         return poses
+    
+    def path_to_node(self, nid: str) -> list[str]:
+        seq = list(self.tree.rsearch(nid=nid))
+        return list(reversed(seq))
 
     def show(self, data_property: Optional[str] = None):
         return self.tree.show(data_property=data_property)
