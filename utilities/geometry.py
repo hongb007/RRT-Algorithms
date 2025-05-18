@@ -13,23 +13,9 @@ def dist_between_points(a, b):
 
 
 def steer(start: np.ndarray, goal: np.ndarray, step_size: float) -> np.ndarray:
-    """
-    Return a point in the direction of the goal, that is distance away from start
-    :param start: start location
-    :param goal: goal location
-    :param step_size: step size away from start
-    :return: point in the direction of the goal
-    """
-
     total_dist = dist_between_points(start, goal)
-
     if total_dist <= step_size:
         return goal
-
-    x_dist = start[0] - goal[0]
-    y_dist = start[1] - goal[1]
-
-    step_x = step_size * x_dist / total_dist
-    step_y = step_size * y_dist / total_dist
-
-    return np.array([start[0] + step_x, start[1] + step_y])
+    # compute vector from start toward goal
+    direction = (goal - start) / total_dist
+    return start + step_size * direction

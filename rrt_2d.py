@@ -5,10 +5,10 @@ import numpy as np
 
 dimensions = np.array([100, 100])
 start = np.array([50, 50])
-goal = np.array([70, 70])
+goal = np.array([100, 100])
 goal_radius = 5
 step_size = 5
-n_samples = 5000
+n_samples = 3000
 
 rrt_space = space(
     dimensions=dimensions,
