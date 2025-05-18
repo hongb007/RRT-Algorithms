@@ -1,21 +1,22 @@
 from typing import Optional
 import numpy as np
 from treelib.tree import Tree
-from utilities.map import map
-from utilities.geometry import dist_between_points
+from utilities.world_space import space
+from utilities.geometry import steer, dist_between_points
 
 
 class rrt_tree(object):
-    def __init__(self, map: map):
+    def __init__(self, space: space):
         self.tree = Tree()
         self.node_count = 0
-        self.map = map
-        self.add_node(map.start[0], map.start[1])
+        self.space = space
+        self.add_node(space.start[0], space.start[1])
 
     def add_node(self, a: float, b: float):
         self.node_count += 1
         nid = f"Node {self.node_count}"
         pose = np.array([a, b])
+        steered_pose = pose.copy
 
         if self.tree.size() == 0:
             self.tree.create_node(nid, nid, data=ArrayHolder(pose))
@@ -30,17 +31,18 @@ class rrt_tree(object):
                 # print("Distance between " + str(pose) + " and " + str(node.data.array) + " is " + str(d))
 
                 if (
-                    self.map.collision_free_path(pose1=node.data.array, pose2=pose)
+                    self.space.collision_free_path(pose1=node.data.array, pose2=pose)
                     and d < min_distance
                 ):
                     min_distance = d
                     parent_node = node
+                    steered_pose = steer(parent_node.data.array, pose, self.space.step_size)
 
             self.tree.create_node(
                 nid,
                 nid,
                 parent=parent_node,
-                data=ArrayHolder(pose),
+                data=ArrayHolder(steered_pose),
             )
 
             return nid
