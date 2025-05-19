@@ -50,6 +50,7 @@ def steer(
     dist = np.minimum(step_size, norm_v)
     return parent + dist * dir_v
 
+
 def original_steer(start: np.ndarray, goal: np.ndarray, step_size: float) -> np.ndarray:
     total_dist = dist_between_points(start, goal)
     if total_dist <= step_size:

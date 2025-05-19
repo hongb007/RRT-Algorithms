@@ -31,15 +31,17 @@ class rrt_tree(object):
 
                 d = dist_between_points(node.data.array, pose)
 
-                # print("Distance between " + str(pose) + " and " + str(node.data.array) + " is " + str(d))
-
                 if d < min_distance:
                     min_distance = d
                     parent_node = node
                     steered_pose = steer(
-                        parent_node.data.array, pose, self.space.step_size, self.space.goal, self.space.theta
+                        parent_node.data.array,
+                        pose,
+                        self.space.step_size,
+                        self.space.goal,
+                        self.space.theta,
                     )
-                    
+
                     # steered_pose = original_steer(
                     #     parent_node.data.array, pose, self.space.step_size
                     # )
@@ -56,7 +58,7 @@ class rrt_tree(object):
                 )
 
                 return steered_pose, nid
-            
+
             self.node_count -= 1
             return None, None
 

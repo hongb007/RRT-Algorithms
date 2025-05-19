@@ -24,10 +24,10 @@ rrt_space = space(
     goal_radius=goal_radius,
     step_size=step_size,
     theta=theta,
-    bias = bias_percent/100.0,
+    bias=bias_percent / 100.0,
     n_samples=n_samples,
     n_rectangles=n_rectangles,
-    rect_sizes=rect_sizes
+    rect_sizes=rect_sizes,
 )
 rrt_algorithm = RRT(rrt_space, live=True)
 
