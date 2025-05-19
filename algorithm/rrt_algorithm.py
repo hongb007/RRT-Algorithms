@@ -1,40 +1,51 @@
 import numpy as np
-from algorithm.tree import rrt_tree
 from utilities.plot import LiveRRTPlot
+from algorithm.tree import rrt_tree
+import matplotlib.pyplot as plt
 
 class RRT:
-    def __init__(self, space):
+    def __init__(self, space, live: bool = True):
         self.space = space
         self.rrt_tree = rrt_tree(space)
+        self.live = live
 
     def execute(self):
-        # Initialize live plot
-        plotter = LiveRRTPlot(self.space)
+        plotter = LiveRRTPlot(self.space, live=self.live)
+        tree, path = None, None
 
-        for i in range(self.space.n_samples):
-            pose = np.array([
-                np.random.uniform(0, self.space.dimensions[0]),
-                np.random.uniform(0, self.space.dimensions[1]),
-            ])
+        # build until goal
+        for _ in range(self.space.n_samples):
+            chance = np.random.uniform(0,1)
+            if (chance < self.space.bias):
+                pose = self.space.goal
+            else:
+                pose = np.array([
+                    np.random.uniform(0, self.space.dimensions[0]),
+                    np.random.uniform(0, self.space.dimensions[1]),
+                ])
 
-            steered_pose, nid = self.rrt_tree.add_node(pose)
+            steered, nid = self.rrt_tree.add_node(pose)
+            if steered is not None:
+                parent_id = self.rrt_tree.tree.get_node(nid).bpointer
+                parent_pt = self.rrt_tree.tree.get_node(parent_id).data.array
+                plotter.add_node(steered, parent_pt)
+                if self.space.close_to_goal(steered):
+                    tree = self.rrt_tree.tree
+                    path = self.rrt_tree.path_to_node(nid)
+                    break
 
-            if steered_pose is not None and nid is not None:
-                # Fetch parent coords
-                parent_id = self.rrt_tree.tree.get_node(nid).bpointer # type: ignore
-                parent_node = self.rrt_tree.tree.get_node(parent_id)
-                parent_coords = parent_node.data.array # type: ignore
+        # if non-live, draw full tree
+        if not self.live:
+            tree = tree or self.rrt_tree.tree
+            plotter.plot_tree(tree)
 
-                # Live update plot
-                plotter.add_node(steered_pose, parent_coords)
+        # draw path if found
+        if path:
+            coords = [self.rrt_tree.tree.get_node(pid).data.array for pid in path]
+            plotter.plot_path(coords)
 
-                # Check goal
-                if self.space.close_to_goal(steered_pose):
-                    path_node_ids = self.rrt_tree.path_to_node(nid)
-                    path_coords = [self.rrt_tree.tree.get_node(pid).data.array for pid in path_node_ids] # type: ignore
-                    # Plot final path and keep window open
-                    plotter.plot_path(path_coords)
-                    return self.rrt_tree.tree, path_node_ids
+        # finally—block on the window in non-live mode
+        if not self.live:
+            plt.show(block=True)
 
-        # Finished without goal
-        return self.rrt_tree.tree, None
+        return tree, path

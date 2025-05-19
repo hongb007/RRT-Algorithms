@@ -2,7 +2,7 @@ from typing import Optional
 import numpy as np
 from treelib.tree import Tree
 from utilities.search_space import space
-from utilities.geometry import steer, dist_between_points
+from utilities.geometry import steer, original_steer, dist_between_points
 
 
 class rrt_tree(object):
@@ -37,8 +37,12 @@ class rrt_tree(object):
                     min_distance = d
                     parent_node = node
                     steered_pose = steer(
-                        parent_node.data.array, pose, self.space.step_size
+                        parent_node.data.array, pose, self.space.step_size, self.space.goal, self.space.theta
                     )
+                    
+                    # steered_pose = original_steer(
+                    #     parent_node.data.array, pose, self.space.step_size
+                    # )
 
             # ensure we actually found a parent before dereferencing
             if parent_node is not None and self.space.collision_free_path(

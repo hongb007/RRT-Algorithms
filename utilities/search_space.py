@@ -12,6 +12,8 @@ class space(object):
         goal: np.ndarray,
         goal_radius: float = 1.0,
         step_size: float = 5.0,
+        theta: float = 90,
+        bias: float = 0,
         n_samples: int = 1000,
         n_rectangles: int = 10,
         rect_sizes: Optional[np.ndarray] = None,
@@ -21,6 +23,8 @@ class space(object):
         self.goal = goal
         self.goal_radius = goal_radius
         self.step_size = step_size
+        self.theta = theta
+        self.bias = bias
         self.n_samples = n_samples
         self.generate_obstacles(n_rectangles, rect_sizes)
 
@@ -73,4 +77,4 @@ class space(object):
         return True
 
     def close_to_goal(self, pose: np.ndarray):
-        return dist_between_points(pose, self.goal) <= self.step_size
+        return dist_between_points(pose, self.goal) <= self.goal_radius
