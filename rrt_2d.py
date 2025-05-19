@@ -2,11 +2,11 @@ from algorithm.rrt_algorithm import RRT
 from utilities.search_space import space
 import numpy as np
 
-np.random.seed(2)
+np.random.seed(3)
 
 dimensions = np.array([100, 100])
-start = np.array([99, 99])
-goal = np.array([50, 5])
+start = np.array([1, 1])
+goal = np.array([99, 99])
 goal_radius = 3
 step_size = 5
 # In degrees
