@@ -26,12 +26,12 @@ class RRT:
 
             steered, nid = self.rrt_tree.add_node(pose)
             if steered is not None:
-                parent_id = self.rrt_tree.tree.get_node(nid).bpointer
-                parent_pt = self.rrt_tree.tree.get_node(parent_id).data.array
+                parent_id = self.rrt_tree.tree.get_node(nid).bpointer # type: ignore
+                parent_pt = self.rrt_tree.tree.get_node(parent_id).data.array # type: ignore
                 plotter.add_node(steered, parent_pt)
                 if self.space.close_to_goal(steered):
                     tree = self.rrt_tree.tree
-                    path = self.rrt_tree.path_to_node(nid)
+                    path = self.rrt_tree.path_to_node(nid) # type: ignore
                     break
 
         # if non-live, draw full tree
@@ -41,7 +41,7 @@ class RRT:
 
         # draw path if found
         if path:
-            coords = [self.rrt_tree.tree.get_node(pid).data.array for pid in path]
+            coords = [self.rrt_tree.tree.get_node(pid).data.array for pid in path] # type: ignore
             plotter.plot_path(coords)
 
         # finally—block on the window in non-live mode
