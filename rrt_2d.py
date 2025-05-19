@@ -7,7 +7,7 @@ np.random.seed(1)
 
 dimensions = np.array([100, 100])
 start = np.array([50, 50])
-goal = np.array([80, 80])
+goal = np.array([60, 60])
 goal_radius = 5
 step_size = 3
 n_samples = 3000
@@ -28,10 +28,10 @@ rrt_algorithm = RRT(rrt_space)
 
 tree, path_to_goal = rrt_algorithm.execute() or []
 
-if path_to_goal is None:
-    print("No solution found. Try again next time. ")
-else:
-    plot_rrt(tree, path_to_goal, rrt_space.rectangles)
+# if path_to_goal is None:
+#     print("No solution found. Try again next time. ")
+# else:
+#     plot_rrt(tree, path_to_goal, rrt_space.rectangles)
 
 # tree = rrt_tree(rrt_space)
 # tree.add_node(100, 0)
