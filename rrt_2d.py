@@ -2,20 +2,20 @@ from algorithm.rrt_algorithm import RRT
 from utilities.search_space import space
 import numpy as np
 
-np.random.seed(3)
+np.random.seed(7)
 
 dimensions = np.array([100, 100])
 start = np.array([1, 1])
 goal = np.array([99, 99])
 goal_radius = 3
-step_size = 5
+step_size = 3
 # In degrees
-theta = 120
+theta = 140
 bias_percent = 10.0
 n_samples = 3000
-n_rectangles = 30
+n_rectangles = 80
 # size_range: (min_w, max_w), (min_h, max_h)
-rect_sizes = np.array([[5, 15], [5, 15]])
+rect_sizes = np.array([[1, 15], [1, 15]])
 
 rrt_space = space(
     dimensions=dimensions,
