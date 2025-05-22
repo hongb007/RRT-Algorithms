@@ -3,10 +3,14 @@ import numpy as np
 
 def dist_between_points(a, b):
     """
-    Return the Euclidean distance between two points
-    :param a: first point
-    :param b: second point
-    :return: Euclidean distance between a and b
+    Calculate the Euclidean distance between two points.
+
+    Parameters:
+        a (array-like): Coordinates of the first point.
+        b (array-like): Coordinates of the second point.
+
+    Returns:
+        float: Euclidean distance between points a and b.
     """
     distance = np.linalg.norm(np.array(b) - np.array(a))
     return distance
@@ -19,6 +23,16 @@ def steer(
     goal: np.ndarray,
     theta_deg: float,
 ) -> np.ndarray:
+    """
+    Calculate the Euclidean distance between two points.
+
+    Parameters:
+        a (array-like): Coordinates of the first point.
+        b (array-like): Coordinates of the second point.
+
+    Returns:
+        float: Euclidean distance between points a and b.
+    """
     # convert to radians
     max_theta = np.deg2rad(theta_deg / 2)
 
@@ -52,9 +66,24 @@ def steer(
 
 
 def original_steer(start: np.ndarray, goal: np.ndarray, step_size: float) -> np.ndarray:
+    """
+    Steer from a start point towards a goal point, constrained by a maximum step size.
+
+    This function moves from the start point towards the goal point by a distance not exceeding the specified
+    step size. If the goal is within the step size, it returns the goal point directly.
+
+    Parameters:
+        start (np.ndarray): Coordinates of the start point.
+        goal (np.ndarray): Coordinates of the goal point.
+        step_size (float): Maximum distance to move from the start point.
+
+    Returns:
+        np.ndarray: New point steered from the start towards the goal, adhering to the step size constraint.
+    """
     total_dist = dist_between_points(start, goal)
     if total_dist <= step_size:
         return goal
+    
     # compute vector from start toward goal
     direction = (goal - start) / total_dist
     return start + step_size * direction

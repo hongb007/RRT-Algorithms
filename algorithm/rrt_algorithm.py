@@ -8,11 +8,34 @@ from utilities.search_space import space
 
 class RRT:
     def __init__(self, space: space, live: bool = True):
+        """
+        Initialize the Rapidly-Exploring Random Tree (RRT) planner.
+
+        Parameters:
+            space (space): The search space containing environment dimensions, obstacles, start and goal positions.
+            live (bool): Flag indicating whether to enable live visualization during the planning process.
+        """
         self.space = space
         self.rrt_tree = rrt_tree(space)
         self.live = live
 
     def execute(self):
+        """
+        Execute the RRT algorithm to find a path from the start to the goal within the defined search space.
+
+        The method performs the following steps:
+            - Initializes the visualization tool if live plotting is enabled.
+            - Iteratively samples random points in the search space.
+            - Applies a bias towards the goal based on the specified bias probability.
+            - Attempts to add new nodes to the tree by steering towards sampled points.
+            - Checks for proximity to the goal to determine if a valid path has been found.
+            - Visualizes the tree expansion and final path if live plotting is enabled.
+
+        Returns:
+            tuple: A tuple containing:
+                - tree: The constructed RRT tree structure.
+                - path: A list of node identifiers representing the path from start to goal, if found; otherwise, None.
+        """
         plotter = LiveRRTPlot(self.space, live=self.live)
         tree, path = None, None
 
