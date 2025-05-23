@@ -33,7 +33,7 @@ goal_radius = 3
 # Set the maximum distance the tree can extend in one iteration
 step_size = 3
 
-# Define the maximum steering angle in degrees (used in certain RRT variants)
+# Define the maximum steering angle in degrees
 theta = 180
 
 # Set the percentage bias towards sampling the goal directly
