@@ -3,7 +3,7 @@ from matplotlib.patches import Rectangle, Circle
 import numpy as np
 from typing import List, Any
 
-from utilities.search_space import space
+from algorithm.search_space import space
 
 
 class LiveRRTPlot:

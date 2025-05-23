@@ -1,7 +1,7 @@
 from typing import Optional
 import numpy as np
 from treelib.tree import Tree
-from utilities.search_space import space
+from algorithm.search_space import space
 from utilities.geometry import steer, original_steer, dist_between_points
 
 

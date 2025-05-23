@@ -1,4 +1,3 @@
-from typing import Optional
 import numpy as np
 from utilities.geometry import dist_between_points
 from sympy import Point, Polygon, Segment

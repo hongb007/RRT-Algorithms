@@ -3,7 +3,7 @@ from utilities.plot import LiveRRTPlot
 from algorithm.tree import rrt_tree
 import matplotlib.pyplot as plt
 
-from utilities.search_space import space
+from algorithm.search_space import space
 
 
 class RRT:

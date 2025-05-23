@@ -1,6 +1,6 @@
 import argparse
 from algorithm.rrt_algorithm import RRT
-from utilities.search_space import space
+from algorithm.search_space import space
 import numpy as np
 
 # Set the random seed for reproducibility of results
