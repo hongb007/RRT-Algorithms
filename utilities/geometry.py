@@ -83,7 +83,7 @@ def original_steer(start: np.ndarray, goal: np.ndarray, step_size: float) -> np.
     total_dist = dist_between_points(start, goal)
     if total_dist <= step_size:
         return goal
-    
+
     # compute vector from start toward goal
     direction = (goal - start) / total_dist
     return start + step_size * direction

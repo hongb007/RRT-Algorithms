@@ -7,9 +7,15 @@ import numpy as np
 np.random.seed(8)
 
 # Parse command-line arguments
-parser = argparse.ArgumentParser(description="Run the RRT algorithm with optional live visualization.")
-parser.add_argument('--live', type=lambda x: x.lower() == 'true', default=True,
-                    help='Enable live visualization (True or False). Default is True.')
+parser = argparse.ArgumentParser(
+    description="Run the RRT algorithm with optional live visualization."
+)
+parser.add_argument(
+    "--live",
+    type=lambda x: x.lower() == "true",
+    default=True,
+    help="Enable live visualization (True or False). Default is True.",
+)
 args = parser.parse_args()
 
 # Define the dimensions of the 2D workspace (width, height)

@@ -17,6 +17,7 @@ class rrt_tree(object):
         node_count (int): Counter for the number of nodes added to the tree.
         space (space): The search space containing environment dimensions, obstacles, start, and goal positions.
     """
+
     def __init__(self, space: space):
         """
         Initialize the RRT with the given search space.
@@ -55,7 +56,7 @@ class rrt_tree(object):
             min_distance = np.finfo(np.float64).max
 
             for node in self.tree.all_nodes_itr():
-                # skip any tree‐nodes that somehow have no `data`
+                # skip any tree‐nodes that somehow have no data
                 if node.data is None:
                     continue
 
@@ -103,11 +104,11 @@ class rrt_tree(object):
             List[np.ndarray]: A list of positions representing the path from the root to the target node.
         """
         poses = []
-        
+
         for nid in self.tree.rsearch(nid=node_nid):
-            node = self.tree[nid]  # guaranteed to be a Node
+            node = self.tree[nid]
             poses.append(node.data.array)
-            
+
         return poses
 
     def path_to_node(self, nid: str) -> list[str]:
@@ -147,12 +148,12 @@ class rrt_tree(object):
 
 class ArrayHolder:
     """
-    A simple wrapper class for storing numpy arrays.
+    A simple wrapper class for storing numpy arrays for use in nodes in the RRT tree.
 
     Attributes:
         array (np.ndarray): The numpy array being wrapped.
     """
-    
+
     def __init__(self, arr):
         """
         Initialize the ArrayHolder with the given array.

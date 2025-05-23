@@ -45,10 +45,9 @@ class RRT:
             if chance < self.space.bias:
                 # Non-uniformly generating samples radius of largest obstacle size. More dense toward center
                 # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
-                r = (
-                    np.maximum(self.space.rect_sizes[0][1], self.space.rect_sizes[1][1])
-                    * np.random.uniform(0, 1)
-                )
+                r = np.maximum(
+                    self.space.rect_sizes[0][1], self.space.rect_sizes[1][1]
+                ) * np.random.uniform(0, 1)
                 theta = np.random.uniform(0, 1) * 2 * np.pi
 
                 pose = np.array(
