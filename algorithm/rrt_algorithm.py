@@ -39,10 +39,12 @@ class RRT:
         plotter = LiveRRTPlot(self.space, live=self.live)
         tree, path = None, None
 
-        # build until goal
+        # build until goal or no more samples
         for _ in range(self.space.n_samples):
+            
+            # simulating chance for generating sample near goal
             chance = np.random.uniform(0, 1)
-            if chance < self.space.bias:
+            if chance <= self.space.bias_chance:
                 # Non-uniformly generating samples radius of largest obstacle size. More dense toward center
                 # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
                 r = np.maximum(

@@ -22,49 +22,80 @@ def steer(
     step_size: float,
     goal: np.ndarray,
     theta_deg: float,
+    turn_chance: float,
 ) -> np.ndarray:
     """
-    Calculate the Euclidean distance between two points.
+    Computes a new node position by steering a sample node to be within the step size of the parent node, 
+    constrained by a maximum step size. Furthermore, this method includes a probabilistic adjustment 
+    toward the goal direction within a specified angular constraint.
 
     Parameters:
-        a (array-like): Coordinates of the first point.
-        b (array-like): Coordinates of the second point.
+    -----------
+    parent : np.ndarray
+        Coordinates of the current node (2D vector).
+    sample : np.ndarray
+        Coordinates of the randomly sampled node in the space (2D vector).
+    step_size : float
+        Maximum distance to move from the parent node towards the sample.
+    goal : np.ndarray
+        Coordinates of the goal node (2D vector).
+    theta_deg : float
+        Maximum allowable steering angle in degrees; defines the angular constraint.
+    turn_chance : float
+        Probability (between 0 and 1) of adjusting the steering direction towards the goal.
 
     Returns:
-        float: Euclidean distance between points a and b.
+    --------
+    np.ndarray
+        Coordinates of the new node after steering (2D vector).
     """
-    # convert to radians
+
+    # Convert half of the maximum steering angle from degrees to radians
     max_theta = np.deg2rad(theta_deg / 2)
 
-    # direction to sample
+    # Compute the vector from the parent node to the sample node
     v = sample - parent
     norm_v = np.linalg.norm(v)
     if norm_v == 0:
+        # If the sample coincides with the parent, no movement is needed
         return parent
 
+    # Normalize the vector to obtain the direction
     dir_v = v / norm_v
 
-    # direction to goal
-    g = goal - parent
-    dir_g = g / np.linalg.norm(g)
+    # Determine whether to adjust the steering direction towards the goal
+    chance = np.random.uniform(0, 1)
+    if chance <= turn_chance:
+        # Compute the vector from the parent node to the goal
+        g = goal - parent
+        dir_g = g / np.linalg.norm(g)
 
-    # signed angle between dir_v and dir_g
-    dot = np.clip(np.dot(dir_v, dir_g), -1.0, 1.0)
-    angle = np.arccos(dot)
-    cross = np.cross(np.append(dir_g, 0), np.append(dir_v, 0))[2]
-    sign = np.sign(cross)
+        # Calculate the angle between dir_v and dir_g
+        dot = np.clip(np.dot(dir_v, dir_g), -1.0, 1.0)
+        angle = np.arccos(dot)
 
-    # if outside cone, rotate into boundary
-    if angle > max_theta:
-        angle = max_theta * sign
-        R = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
-        dir_v = R.dot(dir_g)
+        # Determine the sign of the angle using the cross product
+        cross = np.cross(np.append(dir_g, 0), np.append(dir_v, 0))[2]
+        sign = np.sign(cross)
 
-    # step along dir_v
-    dist = np.minimum(step_size, norm_v)
+        # If the angle exceeds the maximum allowed, rotate dir_v towards dir_g
+        if angle > max_theta:
+            angle = max_theta * sign
+            # Construct the 2D rotation matrix
+            R = np.array(
+                [[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]]
+            )
+            # Rotate dir_g by the constrained angle to obtain the new direction
+            dir_v = R.dot(dir_g)
+
+    # Determine the distance to move: the lesser of step_size and the distance to the sample
+    dist = min(step_size, norm_v)  # type: ignore
+
+    # Compute and return the new node position
     return parent + dist * dir_v
 
 
+# Not used
 def original_steer(start: np.ndarray, goal: np.ndarray, step_size: float) -> np.ndarray:
     """
     Steer from a start point towards a goal point, constrained by a maximum step size.

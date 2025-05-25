@@ -71,6 +71,7 @@ class rrt_tree(object):
                         self.space.step_size,
                         self.space.goal,
                         self.space.theta,
+                        self.space.turn_chance
                     )
 
                     # steered_pose = original_steer(

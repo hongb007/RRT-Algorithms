@@ -17,8 +17,9 @@ class space(object):
         goal: np.ndarray,
         goal_radius: float = 1.0,
         step_size: float = 5.0,
-        theta: float = 90,
-        bias: float = 0,
+        theta: float = 360,
+        turn_chance: float = 0,
+        bias_chance: float = 0,
         n_samples: int = 1000,
         n_rectangles: int = 10,
         rect_sizes: np.ndarray = np.zeros((2, 2)),
@@ -32,8 +33,9 @@ class space(object):
             goal (np.ndarray): The goal position coordinates.
             goal_radius (float): The radius within which the goal is considered reached.
             step_size (float): The maximum extension length for path planning steps.
-            theta (float): The maximum steering angle in degrees.
-            bias (float): The probability of sampling the goal directly.
+            theta (float): The maximum turning angle in degrees.
+            turn_chance (float): The chance to turn a sample into the theta range from goal to parent node.
+            bias_chance (float): The probability of sampling the goal directly.
             n_samples (int): The number of samples to generate for path planning.
             n_rectangles (int): The number of rectangular obstacles to generate.
             rect_sizes (np.ndarray): The size range for the rectangular obstacles.
@@ -44,7 +46,8 @@ class space(object):
         self.goal_radius = goal_radius
         self.step_size = step_size
         self.theta = theta
-        self.bias = bias
+        self.turn_chance = turn_chance
+        self.bias_chance = bias_chance
         self.n_samples = n_samples
         self.rect_sizes = rect_sizes
         self.generate_obstacles(n_rectangles, rect_sizes)

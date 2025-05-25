@@ -33,14 +33,17 @@ goal_radius = 3
 # Set the maximum distance the tree can extend in one iteration
 step_size = 3
 
-# Define the maximum steering angle in degrees
+# Define the maximum turning angle in degrees
 theta = 180
+
+# Set the chance to turn a sample into the theta range from goal to parent node
+turn_percent = 80.0
 
 # Set the percentage bias towards sampling the goal directly
 bias_percent = 10.0
 
 # Specify the total number of samples to be generated during RRT execution
-n_samples = 3000
+n_samples = 2000
 
 # Define the number of rectangular obstacles to be placed in the workspace
 n_rectangles = 80
@@ -57,7 +60,8 @@ rrt_space = space(
     goal_radius=goal_radius,
     step_size=step_size,
     theta=theta,
-    bias=bias_percent / 100.0,  # Convert percentage to a decimal
+    turn_chance=turn_percent / 100.0, # Convert percentage to a decimal
+    bias_chance=bias_percent / 100.0,  # Convert percentage to a decimal
     n_samples=n_samples,
     n_rectangles=n_rectangles,
     rect_sizes=rect_sizes,
