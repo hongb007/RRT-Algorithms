@@ -10,27 +10,34 @@ class LiveRRTPlot:
     """
     Provides real-time visualization for the Rapidly-exploring Random Tree (RRT) algorithm.
     This class handles the plotting of the search space, obstacles, start and goal points,
-    and dynamically updates the tree expansion and final path.
+    and number of samples. This class also dynamically updates the tree expansion and number of samples. 
+    Finally, a valid path from the start to the goal is highlighted when found.
     """
 
     def __init__(self, space: space, live: bool = True):
         """
-        Initializes the plotting environment and renders static elements of the search space.
+        Initialize plotting environment and render static elements.
 
         Parameters:
-        - space (space): The search space containing dimensions, obstacles, start, and goal.
-        - live (bool): Flag to enable or disable live plotting. Defaults to True.
+        - space (space): The search space with dimensions, obstacles, start, and goal.
+        - live (bool): Enable live plotting updates if True.
         """
         self.live = live
         self.space = space
 
-        # Set interactive mode based on flag
-        plt.ion() if self.live else plt.ioff()
+        # Sample counter excludes start/goal
+        self.sample_count = 0
 
-        # Initialize the figure and axes
+        # Set interactive plotting mode
+        if self.live:
+            plt.ion()
+        else:
+            plt.ioff()
+
+        # Create figure and axis
         self.fig, self.ax = plt.subplots(figsize=(7, 7))
 
-        # Plot obstacles once
+        # Plot static obstacles
         for poly in space.rectangles:
             xs = [float(v.x) for v in poly.vertices]
             ys = [float(v.y) for v in poly.vertices]
@@ -45,7 +52,7 @@ class LiveRRTPlot:
             )
             self.ax.add_patch(rect)
 
-        # Plot start with marker only
+        # Plot start and goal
         sx, sy = space.start
         self.ax.plot(
             sx,
@@ -56,8 +63,6 @@ class LiveRRTPlot:
             linestyle="None",
             label="Start",
         )
-
-        # Plot goal point
         gx, gy = space.goal
         self.ax.plot(
             gx,
@@ -68,8 +73,6 @@ class LiveRRTPlot:
             linestyle="None",
             label="Goal",
         )
-
-        # Plot the goal region as a circle
         goal_circle = Circle(
             (gx, gy),
             space.goal_radius,
@@ -80,11 +83,32 @@ class LiveRRTPlot:
         )
         self.ax.add_patch(goal_circle)
 
-        # Add proxy legend entries for dynamic elements
+        # Add legend proxies for dynamic elements
         self.ax.plot([], [], "bo", markersize=4, linestyle="None", label="Nodes")
         self.ax.plot([], [], color="lightgrey", linewidth=1, label="Connections")
 
-        # Set up axes
+        # Initialize dynamic storage
+        self.edge_lines = []
+        self.node_scatter = []
+        self.path_line = None
+
+        # Sample counter text: positioned below legend, with boxed background matching legend style
+        self.sample_text = self.ax.text(
+            1.06,
+            0.7,
+            f"Num Samples: {self.sample_count}",
+            transform=self.ax.transAxes,
+            fontsize=10,
+            verticalalignment="top",
+            bbox=dict(
+                facecolor="white",
+                edgecolor="lightgray",
+                boxstyle="round,pad=0.3",
+                alpha=0.8,
+            ),
+        )
+
+        # Configure axes
         self.ax.set_xlim(0, space.dimensions[0])
         self.ax.set_ylim(0, space.dimensions[1])
         self.ax.set_aspect("equal", "box")
@@ -93,23 +117,18 @@ class LiveRRTPlot:
         self.ax.set_ylabel("Y")
         self.ax.grid(True)
 
-        # Initialize storage for dynamic plot elements
-        self.edge_lines = []
-        self.node_scatter = []
-        self.path_line = None
-
-        # Add legend outside the plot area
+        # Add legend outside plot
         self.ax.legend(loc="upper left", bbox_to_anchor=(1.05, 1), borderaxespad=0.0)
         self.fig.subplots_adjust(right=0.75)
 
-        # Initial draw if live plotting is enabled
+        # Initial draw
         if self.live:
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
 
     def add_node(self, new_point, parent_point):
         """
-        Adds a new node and its connection to the parent node in the plot.
+        Add a new node and its connection to the plot, updating the sample counter.
 
         Parameters:
         - new_point (array-like): Coordinates of the new node.
@@ -118,7 +137,11 @@ class LiveRRTPlot:
         if not self.live:
             return
 
-        # Draw the connection (edge) between the parent and new node
+        # Increment sample counter and update text
+        self.sample_count += 1
+        self.sample_text.set_text(f"Num Samples: {self.sample_count}")
+
+        # Draw connection line
         (line,) = self.ax.plot(
             [parent_point[0], new_point[0]],
             [parent_point[1], new_point[1]],
@@ -127,24 +150,23 @@ class LiveRRTPlot:
         )
         self.edge_lines.append(line)
 
-        # Draw the new node
+        # Draw node point
         scatter = self.ax.plot(
             new_point[0], new_point[1], "bo", markersize=4, linestyle="None"
         )
         self.node_scatter.append(scatter)
 
-        # Refresh the canvas
+        # Refresh canvas
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
     def plot_tree(self, tree: Any):
         """
-        Plots all existing nodes and connections from a treelib Tree.
+        Plot all existing nodes and edges from a treelib Tree (non-live mode).
 
         Parameters:
-        - tree (Any): The tree structure containing nodes with 'data' attributes.
+        - tree (Any): Tree containing nodes with 'data' array attributes.
         """
-
         for node in tree.all_nodes_itr():
             parent = node.bpointer
             if parent is None:
@@ -158,27 +180,25 @@ class LiveRRTPlot:
             child_pt = child_data.array
             parent_pt = parent_data.array
 
-            # Draw the connection (edge)
+            # Draw edge and node
             self.ax.plot(
                 [parent_pt[0], child_pt[0]],
                 [parent_pt[1], child_pt[1]],
                 color="lightgrey",
                 linewidth=1,
             )
-
-            # Draw the node
             self.ax.plot(child_pt[0], child_pt[1], "bo", markersize=4, linestyle="None")
 
     def plot_path(self, path_coords: List[np.ndarray]):
         """
-        Plots the final path from the start to the goal.
+        Plot the final path, update legend, and preserve sample count display.
 
         Parameters:
-        - path_coords (List[np.ndarray]): List of coordinates representing the path.
+        - path_coords (List[np.ndarray]): Sequence of coordinates for the path.
         """
         arr = np.array(path_coords)
 
-        # Draw final path line
+        # Draw path line with markers
         (self.path_line,) = self.ax.plot(
             arr[:, 0],
             arr[:, 1],
@@ -189,7 +209,7 @@ class LiveRRTPlot:
             label="Path to Goal",
         )
 
-        # Draw arrows for direction
+        # Draw directional arrows
         for i in range(len(arr) - 1):
             start, end = arr[i], arr[i + 1]
             self.ax.annotate(
@@ -202,7 +222,7 @@ class LiveRRTPlot:
         # Update legend to include path
         self.ax.legend(loc="upper left", bbox_to_anchor=(1.05, 1), borderaxespad=0.0)
 
-        # Replot start with marker only for clarity
+        # Replot start marker for clarity
         sx, sy = self.space.start
         self.ax.plot(
             sx,
@@ -214,7 +234,10 @@ class LiveRRTPlot:
             label="Start",
         )
 
-        # Redraw canvas
+        # After final path, update text to show final sample count
+        self.sample_text.set_text(f"Num Samples: {self.sample_count}")
+        self.sample_text.set_position(xy=(1.06, 0.65))
+
+        # Draw and block to keep window open
         self.fig.canvas.draw()
-        # Always block and show final plot to keep window open
         plt.show(block=True)

@@ -4,7 +4,7 @@ from algorithm.search_space import space
 import numpy as np
 
 # Set the random seed for reproducibility of results
-np.random.seed(8)
+np.random.seed(1)
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
@@ -31,13 +31,13 @@ goal = np.array([99, 99])
 goal_radius = 3
 
 # Set the maximum distance the tree can extend in one iteration
-step_size = 3
+step_size = 4
 
 # Define the maximum turning angle in degrees
 theta = 180
 
 # Set the chance to turn a sample into the theta range from goal to parent node
-turn_percent = 80.0
+turn_percent = 70.0
 
 # Set the percentage bias towards sampling the goal directly
 bias_percent = 10.0
@@ -46,11 +46,11 @@ bias_percent = 10.0
 n_samples = 2000
 
 # Define the number of rectangular obstacles to be placed in the workspace
-n_rectangles = 80
+n_rectangles = 50
 
 # Specify the range of sizes for the rectangular obstacles:
 # First row: (min_width, max_width), Second row: (min_height, max_height)
-rect_sizes = np.array([[1, 15], [1, 15]])
+rect_sizes = np.array([[5, 15], [5, 15]])
 
 # Initialize the search space with the defined parameters
 rrt_space = space(
