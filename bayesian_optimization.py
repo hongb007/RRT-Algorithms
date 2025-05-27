@@ -2,9 +2,9 @@ from algorithm.rrt_algorithm import RRT
 from algorithm.search_space import space
 import numpy as np
 from bayes_opt import BayesianOptimization
-
-np.random.seed(1)
-
+from bayes_opt.util import load_logs
+from bayes_opt.logger import JSONLogger
+from bayes_opt.event import Events
 
 def black_box_function(step_size, theta, turn_percent, bias_percent):
     """
@@ -15,11 +15,11 @@ def black_box_function(step_size, theta, turn_percent, bias_percent):
     # The 'live' parameter enables real-time visualization during execution
     # The 'plot_result' parameter enables plotting after execution of the algorithm
     rrt_algorithm = RRT(
-        rrt_space,
+        space=rrt_space,
         step_size=step_size,
         theta=theta,
-        turn_chance=turn_percent,
-        bias_chance=bias_percent,
+        turn_chance=turn_percent / 100,
+        bias_chance=bias_percent / 100,
         live=False,
         plot_result=False,
     )
@@ -28,10 +28,12 @@ def black_box_function(step_size, theta, turn_percent, bias_percent):
     # Returns:
     # - found_path: if the algorithm found a path in the space constraints
     # - num_samples: number of samples it took to find a path to the goal
-    found_path, num_samples = rrt_algorithm.execute()
+    found_path, num_samples, n_tries_to_place = rrt_algorithm.execute()
 
     if found_path:
         return -1 * num_samples
+    elif n_tries_to_place == num_samples*10:
+        return -n_samples * 2
     else:
         return -n_samples
 
@@ -56,7 +58,7 @@ if __name__ == "__main__":
     n_samples = 1000
 
     # Define the number of rectangular obstacles to be placed in the workspace
-    n_rectangles = 65
+    n_rectangles = 70
 
     # Specify the range of sizes for the rectangular obstacles:
     # First row: (min_width, max_width), Second row: (min_height, max_height)
@@ -75,24 +77,24 @@ if __name__ == "__main__":
 
     # Bounded region of parameter space
     pbounds = {
-        "step_size": (0.1, 10.0),
+        "step_size": (0.0, 10.0),
         "theta": (0.0, 360.0),
         "turn_percent": (0.0, 100.0),
-        "bias_percent": (0.0, 100.0),
+        "bias_percent": (0.0, 50.0),
     }
 
     optimizer = BayesianOptimization(
         f=black_box_function,  # type: ignore
         pbounds=pbounds,
-        random_state=1,
+        random_state=2,
     )
 
     optimizer.probe(
         params={
-            "step_size": 8.306516820125049,
-            "theta": 117.98523444669254,
-            "turn_percent": 37.96730648800614,
-            "bias_percent": 67.91604150776595,
+            "step_size": 3,
+            "theta": 180,
+            "turn_percent": 70,
+            "bias_percent": 5,
         },
         lazy=True,
     )

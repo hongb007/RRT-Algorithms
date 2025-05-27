@@ -54,9 +54,11 @@ class RRT:
         path = None
         found_path = False
         num_samples = 0
+        n_tries_to_place_node = 0
 
         # build until goal or no more samples
         while num_samples < self.space.n_samples:
+            n_tries_to_place_node += 1
             # simulating chance for generating sample near goal
             chance = np.random.uniform(0, 1)
             if chance <= self.bias_chance:
@@ -92,6 +94,9 @@ class RRT:
                     path = self.rrt_tree.path_to_node(nid)  # type: ignore
                     found_path = True
                     break
+            if n_tries_to_place_node == self.space.n_samples * 10:
+                break
+            
 
         # If plot, draw full tree at the end
         if self.plot_result:
@@ -108,4 +113,4 @@ class RRT:
 
         plt.close()
 
-        return found_path, num_samples
+        return found_path, num_samples, n_tries_to_place_node

@@ -68,7 +68,7 @@ def steer(
                 dir_v = R.dot(dir_v)
 
     # move by up to step_size along dir_v
-    step = min(step_size, dist_to_sample) # type: ignore
+    step = step_size # type: ignore
     return parent + step * dir_v
 
 
