@@ -15,10 +15,6 @@ class space(object):
         start: np.ndarray,
         goal: np.ndarray,
         goal_radius: float = 1.0,
-        step_size: float = 5.0,
-        theta: float = 360,
-        turn_chance: float = 0,
-        bias_chance: float = 0,
         n_samples: int = 1000,
         n_rectangles: int = 10,
         rect_sizes: np.ndarray = np.zeros((2, 2)),
@@ -43,10 +39,6 @@ class space(object):
         self.start = start
         self.goal = goal
         self.goal_radius = goal_radius
-        self.step_size = step_size
-        self.theta = theta
-        self.turn_chance = turn_chance
-        self.bias_chance = bias_chance
         self.n_samples = n_samples
         self.n_rectangles = n_rectangles
         self.rect_sizes = rect_sizes

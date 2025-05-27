@@ -18,16 +18,19 @@ class rrt_tree(object):
         space (space): The search space containing environment dimensions, obstacles, start, and goal positions.
     """
 
-    def __init__(self, space: space):
+    def __init__(self, space: space, step_size: float, theta: float, turn_chance: float):
         """
         Initialize the RRT with the given search space.
 
         Args:
             space (space): The search space defining the environment for path planning.
         """
-        self.tree = Tree()
-        self.node_count = 0
         self.space = space
+        self.step_size = step_size
+        self.theta = theta
+        self.turn_chance = turn_chance
+        self.node_count = 0
+        self.tree = Tree()
         self.add_node(space.start)
 
     def add_node(self, pose: np.ndarray):
@@ -68,10 +71,10 @@ class rrt_tree(object):
                     steered_pose = steer(
                         parent_node.data.array,
                         pose,
-                        self.space.step_size,
+                        self.step_size,
                         self.space.goal,
-                        self.space.theta,
-                        self.space.turn_chance
+                        self.theta,
+                        self.turn_chance
                     )
 
                     # steered_pose = original_steer(

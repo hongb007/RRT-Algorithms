@@ -11,25 +11,18 @@ def black_box_function(step_size, theta, turn_percent, bias_percent):
     Function with unknown internals we wish to maximize.
     """
 
-    # Initialize the search space with the defined parameters
-    rrt_space = space(
-        dimensions=dimensions,
-        start=start,
-        goal=goal,
-        goal_radius=goal_radius,
-        step_size=step_size,
-        theta=theta,
-        turn_chance=turn_percent / 100.0,  # Convert percentage to a decimal
-        bias_chance=bias_percent / 100.0,  # Convert percentage to a decimal
-        n_samples=n_samples,
-        n_rectangles=n_rectangles,
-        rect_sizes=rect_sizes,
-    )
-
     # Instantiate the RRT algorithm with the configured search space
     # The 'live' parameter enables real-time visualization during execution
     # The 'plot_result' parameter enables plotting after execution of the algorithm
-    rrt_algorithm = RRT(rrt_space, live=False, plot_result=False)
+    rrt_algorithm = RRT(
+        rrt_space,
+        step_size=step_size,
+        theta=theta,
+        turn_chance=turn_percent,
+        bias_chance=bias_percent,
+        live=False,
+        plot_result=False,
+    )
 
     # Execute the RRT algorithm
     # Returns:
@@ -60,14 +53,25 @@ if __name__ == "__main__":
     goal_radius = 3
 
     # Specify the total number of samples to be generated during RRT execution
-    n_samples = 2000
+    n_samples = 1000
 
     # Define the number of rectangular obstacles to be placed in the workspace
-    n_rectangles = 80
+    n_rectangles = 65
 
     # Specify the range of sizes for the rectangular obstacles:
     # First row: (min_width, max_width), Second row: (min_height, max_height)
     rect_sizes = np.array([[5, 15], [5, 15]])
+
+    # Initialize the search space with the defined parameters
+    rrt_space = space(
+        dimensions=dimensions,
+        start=start,
+        goal=goal,
+        goal_radius=goal_radius,
+        n_samples=n_samples,
+        n_rectangles=n_rectangles,
+        rect_sizes=rect_sizes,
+    )
 
     # Bounded region of parameter space
     pbounds = {
@@ -94,8 +98,8 @@ if __name__ == "__main__":
     )
 
     optimizer.maximize(
-        init_points=5,
+        init_points=1,
         n_iter=100,
     )
-    
+
     print(optimizer.max)

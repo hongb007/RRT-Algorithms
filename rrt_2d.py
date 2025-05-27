@@ -37,7 +37,7 @@ goal = np.array([99, 99])
 goal_radius = 3
 
 # Set the maximum distance the tree can extend in one iteration
-step_size = 6.30710048263412
+step_size = 3
 
 # Define the maximum turning angle in degrees
 theta = 179.28070989836766
@@ -52,7 +52,7 @@ bias_percent = 54.224225097836545
 n_samples = 2000
 
 # Define the number of rectangular obstacles to be placed in the workspace
-n_rectangles = 80
+n_rectangles = 65
 
 # Specify the range of sizes for the rectangular obstacles:
 # First row: (min_width, max_width), Second row: (min_height, max_height)
@@ -64,10 +64,6 @@ rrt_space = space(
     start=start,
     goal=goal,
     goal_radius=goal_radius,
-    step_size=step_size,
-    theta=theta,
-    turn_chance=turn_percent / 100.0, # Convert percentage to a decimal
-    bias_chance=bias_percent / 100.0,  # Convert percentage to a decimal
     n_samples=n_samples,
     n_rectangles=n_rectangles,
     rect_sizes=rect_sizes,
@@ -76,7 +72,15 @@ rrt_space = space(
 # Instantiate the RRT algorithm with the configured search space
 # The 'live' parameter enables real-time visualization during execution
 # The 'plot_result' parameter enables plotting after execution of the algorithm
-rrt_algorithm = RRT(rrt_space, live=args.live, plot_result=args.plot_result)
+rrt_algorithm = RRT(
+    rrt_space,
+    step_size=step_size,
+    theta=theta,
+    turn_chance=turn_percent / 100.0,  # Convert percentage to a decimal
+    bias_chance=bias_percent / 100.0,  # Convert percentage to a decimal
+    live=args.live,
+    plot_result=args.plot_result,
+)
 
 # Execute the RRT algorithm
 # Returns:

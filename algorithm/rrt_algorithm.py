@@ -7,7 +7,16 @@ from algorithm.search_space import space
 
 
 class RRT:
-    def __init__(self, space: space, live: bool = True, plot_result: bool = True):
+    def __init__(
+        self,
+        space: space,
+        step_size: float,
+        theta: float,
+        turn_chance: float,
+        bias_chance: float,
+        live: bool = True,
+        plot_result: bool = True,
+    ):
         """
         Initialize the Rapidly-Exploring Random Tree (RRT) planner.
 
@@ -16,7 +25,11 @@ class RRT:
             live (bool): Flag indicating whether to enable live visualization during the planning process.
         """
         self.space = space
-        self.rrt_tree = rrt_tree(space)
+        self.step_size = step_size
+        self.theta = theta
+        self.turn_chance = turn_chance
+        self.bias_chance = turn_chance
+        self.rrt_tree = rrt_tree(space, step_size, theta, turn_chance)
         self.live = live
         self.plot_result = plot_result
 
@@ -39,15 +52,14 @@ class RRT:
         """
         plotter = LiveRRTPlot(self.space, live=self.live)
         path = None
-        found_path = False      
+        found_path = False
         num_samples = 0
 
         # build until goal or no more samples
-        for _ in range(self.space.n_samples):
-            
+        while num_samples < self.space.n_samples:
             # simulating chance for generating sample near goal
             chance = np.random.uniform(0, 1)
-            if chance <= self.space.bias_chance:
+            if chance <= self.bias_chance:
                 # Non-uniformly generating samples radius of largest obstacle size. More dense toward center
                 # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
                 r = np.maximum(
@@ -58,19 +70,20 @@ class RRT:
                 pose = np.array(
                     [
                         self.space.goal[0] + r * np.cos(theta),
-                        self.space.goal[1] + r * np.sin(theta)
+                        self.space.goal[1] + r * np.sin(theta),
                     ]
                 )
             else:
                 pose = np.array(
                     [
                         np.random.uniform(0, self.space.dimensions[0]),
-                        np.random.uniform(0, self.space.dimensions[1])
+                        np.random.uniform(0, self.space.dimensions[1]),
                     ]
                 )
 
             steered, nid = self.rrt_tree.add_node(pose)
             if steered is not None:
+                num_samples += 1
                 parent_id = self.rrt_tree.tree.get_node(nid).bpointer  # type: ignore
                 parent_pt = self.rrt_tree.tree.get_node(parent_id).data.array  # type: ignore
                 if self.live:
@@ -79,8 +92,6 @@ class RRT:
                     path = self.rrt_tree.path_to_node(nid)  # type: ignore
                     found_path = True
                     break
-        
-        num_samples = self.rrt_tree.tree.size() - 1
 
         # If plot, draw full tree at the end
         if self.plot_result:
@@ -94,7 +105,7 @@ class RRT:
         # finally—block on the window in plot-result mode
         if self.plot_result:
             plt.show(block=True)
-            
+
         plt.close()
 
         return found_path, num_samples

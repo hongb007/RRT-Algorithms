@@ -12,7 +12,7 @@ def dist_between_points(a, b):
     Returns:
         float: Euclidean distance between points a and b.
     """
-    distance = np.linalg.norm(np.array(b) - np.array(a))
+    distance = np.linalg.norm(np.subtract(b, a))
     return distance
 
 def steer(
