@@ -38,13 +38,13 @@ class LiveRRTPlot:
         self.fig, self.ax = plt.subplots(figsize=(7, 7))
 
         # Plot static obstacles
-        for poly in space.rectangles:
-            xs = [float(v.x) for v in poly.vertices]
-            ys = [float(v.y) for v in poly.vertices]
+        # space.rectangles has shape (4, N): [x_min; y_min; x_max; y_max]
+        # we zip across columns to get each rect’s coords
+        for x_min, y_min, x_max, y_max in zip(*space.rectangles):
             rect = Rectangle(
-                (min(xs), min(ys)),
-                max(xs) - min(xs),
-                max(ys) - min(ys),
+                (x_min, y_min),           # lower‐left corner
+                (x_max - x_min),          # width
+                (y_max - y_min),          # height
                 facecolor="lightgrey",
                 edgecolor="black",
                 alpha=0.5,

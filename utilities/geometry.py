@@ -31,9 +31,9 @@ def steer(
 
     Parameters:
     -----------
-    parent : np.ndarray
+    parent : np.ndarray, shape (1,2)
         Coordinates of the current node (2D vector).
-    sample : np.ndarray
+    sample : np.ndarray, shape (1,2)
         Coordinates of the randomly sampled node in the space (2D vector).
     step_size : float
         Maximum distance to move from the parent node towards the sample.

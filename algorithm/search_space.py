@@ -1,6 +1,5 @@
 import numpy as np
 from utilities.geometry import dist_between_points
-from sympy import Point, Polygon, Segment
 
 
 class space(object):
@@ -49,131 +48,213 @@ class space(object):
         self.turn_chance = turn_chance
         self.bias_chance = bias_chance
         self.n_samples = n_samples
+        self.n_rectangles = n_rectangles
         self.rect_sizes = rect_sizes
-        self.generate_obstacles(n_rectangles, rect_sizes)
+        self.generate_obstacles()
 
-    def generate_obstacles(self, n_rectangles: int, rect_sizes):
+    def generate_obstacles(self):
         """
-        Generates random rectangular obstacles and adds border obstacles to the workspace.
-
-        Parameters:
-            n_rectangles (int): The number of random rectangles to generate.
-            rect_sizes (np.ndarray): The size range for the rectangular obstacles.
+        Generates random rectangular obstacles and adds border obstacles to the search space.
         """
-        self.rectangles = self.generate_rectangles(n_rectangles, rect_sizes)
-        self.rectangles.extend(self.generate_border())
+        self.rectangles = self.generate_rectangles()
+        self.rectangles = np.append(self.rectangles, self.generate_border(), axis=1)
 
     def generate_border(self):
         """
         Generates border obstacles around the workspace to prevent paths from exiting the boundaries.
 
         Returns:
-            list: A list of Polygon objects representing the border obstacles.
+            A numpy array in the shape (4,4) representing the four rectangle obstacle borders.
         """
-        border = []
 
-        x = self.dimensions[0]
-        y = self.dimensions[1]
-
-        p1, p2, p3, p4 = (Point(0, 0), Point(x, 0), Point(x, y), Point(0, y))
+        x_dim_max = self.dimensions[0]
+        y_dim_max = self.dimensions[1]
 
         thickness = 0.1
 
-        rect1 = Polygon(p1, p2, Point(x, thickness), Point(0, thickness))
-        rect2 = Polygon(Point(x - thickness, 0), p2, p3, Point(x - thickness, y))
-        rect3 = Polygon(Point(0, y - thickness), Point(x, y - thickness), p3, p4)
-        rect4 = Polygon(p1, Point(thickness, 0), Point(thickness, y), p4)
+        x_min = np.array([0, x_dim_max, 0, -thickness])
+        x_max = np.array([x_dim_max, x_dim_max + thickness, x_dim_max, 0])
 
-        border.append(rect1)
-        border.append(rect2)
-        border.append(rect3)
-        border.append(rect4)
+        y_min = np.array([-thickness, 0, y_dim_max, 0])
+        y_max = np.array([0, y_dim_max, y_dim_max + thickness, y_dim_max])
 
-        return border
+        return np.array([x_min, y_min, x_max, y_max])
 
-    def generate_rectangles(self, n: int, size_range):
+    def generate_rectangles(self):
+        # Initial generation
+        widths, heights = self.generate_rect_sizes(self.n_rectangles, self.rect_sizes)
+        x_min, y_min = self.generate_rect_starting_pose(widths, heights)
+        x_max = x_min + widths
+        y_max = y_min + heights
+
+        # Keep regenerating bad rectangles until not covering start or goal
+        while True:
+            # Check the rectangles that cover the start or goal
+            covers_start = (
+                (self.start[0] >= x_min)
+                & (self.start[0] <= x_max)
+                & (self.start[1] >= y_min)
+                & (self.start[1] <= y_max)
+            )
+            covers_goal = (
+                (self.goal[0] >= x_min)
+                & (self.goal[0] <= x_max)
+                & (self.goal[1] >= y_min)
+                & (self.goal[1] <= y_max)
+            )
+            invalid = covers_start | covers_goal
+
+            if not invalid.any():
+                break
+
+            # resample only the bad ones
+            bad = np.nonzero(invalid)[0]
+            nb = bad.size
+
+            # widths/heights -> new x_min,y_min -> new x_max,y_max
+            w_new, h_new = self.generate_rect_sizes(nb, self.rect_sizes)
+            x_min_new, y_min_new = self.generate_rect_starting_pose(w_new, h_new)
+
+            widths[bad] = w_new
+            heights[bad] = h_new
+            x_min[bad] = x_min_new
+            y_min[bad] = y_min_new
+            x_max[bad] = x_min_new + w_new
+            y_max[bad] = y_min_new + h_new
+
+        return np.array([x_min, y_min, x_max, y_max])
+
+    def generate_rect_sizes(self, n: int, rect_sizes):
         """
-        Generates a specified number of random rectangular obstacles, ensuring they do not enclose the start or goal positions.
+        Sample n widths/heights from rect_sizes.
+        Returns two arrays of shape (n,): widths, heights.
+        """
+        (w_min, w_max), (h_min, h_max) = rect_sizes
+        widths = np.random.rand(n) * (w_max - w_min) + w_min
+        heights = np.random.rand(n) * (h_max - h_min) + h_min
+        return widths, heights
+
+    def generate_rect_starting_pose(self, widths, heights):
+        """
+        Given arrays widths and heights of length n,
+        sample bottom-left corners so each rect fits in [0..bounds].
+        Returns two arrays (x_min, y_min) of shape (n,).
+        """
+        x_min = np.random.rand(widths.size) * (self.dimensions[0] - widths)
+        y_min = np.random.rand(heights.size) * (self.dimensions[1] - heights)
+        return x_min, y_min
+
+    def collision_free_path(self, start: np.ndarray, end: np.ndarray):
+        """
+        Determines whether a straight-line path between two poses is free of collisions with all obstacles.
 
         Parameters:
-            n (int): The number of rectangles to generate.
-            size_range (np.ndarray): The size range for the rectangles.
-
-        Returns:
-            list: A list of Polygon objects representing the obstacles.
-        """
-        rects = []
-
-        for _ in range(n):
-            encloses_start_or_goal = True
-            rectangle = Polygon(Point(0, 0))
-
-            while encloses_start_or_goal:
-                rectangle = self.generate_random_rectangle(size_range)
-                if rectangle is not None and not (
-                    self.encloses_point(rectangle, Point(self.start[0], self.start[1]))  # type: ignore
-                    or self.encloses_point(rectangle, Point(self.goal[0], self.goal[1]))  # type: ignore
-                ):
-                    encloses_start_or_goal = False
-
-            rects.append(rectangle)
-        return rects
-
-    def encloses_point(self, poly: Polygon, point: Point):
-        """
-        Checks whether a given polygon encloses a specific point.
-
-        Parameters:
-            poly (Polygon): The polygon to check.
-            point (Point): The point to check.
-
-        Returns:
-            bool: True if the polygon encloses the point or intersects it; False otherwise.
-        """
-        return poly.encloses_point(point) or poly.intersection(point)
-
-    def generate_random_rectangle(self, size_range):
-        """
-        Generates a random rectangle within the workspace bounds based on the specified size range.
-        size_range: (min_w, max_w), (min_h, max_h)
-
-        Parameters:
-            size_range (np.ndarray) : The size range for the rectangle.
-
-        Returns:
-            Polygon: A Polygon object representing the rectangle.
-        """
-        w = np.random.uniform(size_range[0][0], size_range[0][1])
-        h = np.random.uniform(size_range[1][0], size_range[1][1])
-        x = np.random.uniform(0, self.dimensions[0] - w)
-
-        y = np.random.uniform(0, self.dimensions[1] - h)
-
-        p1, p2, p3, p4 = (
-            Point(x, y),
-            Point(x + w, y),
-            Point(x + w, y + h),
-            Point(x, y + h),
-        )
-
-        return Polygon(p1, p2, p3, p4)
-
-    def collision_free_path(self, pose1: np.ndarray, pose2: np.ndarray):
-        """
-        Determines whether a straight-line path between two poses is free of collisions with obstacles.
-
-        Parameters:
-            pose1 (np.ndarray): The starting position coordinates.
-            pose2 (np.ndarray): The ending position coordinates.
+            start (np.ndarray), 1D array of length 2: The starting position coordinates.
+            end (np.ndarray), 1D array of length 2: The ending position coordinates.
 
         Returns:
             bool: True if the path is collision-free; False otherwise.
         """
-        path_segment = Segment(Point(pose1[0], pose1[1]), Point(pose2[0], pose2[1]))
-        for i in range(len(self.rectangles)):
-            if self.rectangles[i].intersection(path_segment):
-                return False
+        x_min, y_min, x_max, y_max = self.rectangles
+
+        # Bottom left to bottom right of rect
+        intersection_points_line1 = self.calculate_intersection_points(
+            start, end, x_min, y_min, x_max, y_min
+        )
+        # Bottom right to top right of rect
+        intersection_points_line2 = self.calculate_intersection_points(
+            start, end, x_max, y_min, x_max, y_max
+        )
+        # Top right to top left of rect
+        intersection_points_line3 = self.calculate_intersection_points(
+            start, end, x_max, y_max, x_min, y_max
+        )
+        # Top left to bottom left of rect
+        intersection_points_line4 = self.calculate_intersection_points(
+            start, end, x_min, y_max, x_min, y_min
+        )
+
+        # If start/end line is parallel or coincident with any rect side, reject path
+        max_val = np.array(np.finfo(np.float64).max)
+
+        mask1 = intersection_points_line1 == max_val
+        mask2 = intersection_points_line2 == max_val
+        mask3 = intersection_points_line3 == max_val
+        mask4 = intersection_points_line4 == max_val
+
+        if (mask1 | mask2 | mask3 | mask4).any():
+            return False
+
+        # If intersection points are on the rect side, then reject path
+        px1 = intersection_points_line1[0]
+        py1 = intersection_points_line1[1]
+        px2 = intersection_points_line2[0]
+        py2 = intersection_points_line2[1]
+        px3 = intersection_points_line3[0]
+        py3 = intersection_points_line3[1]
+        px4 = intersection_points_line4[0]
+        py4 = intersection_points_line4[1]
+
+        mask1 = (
+            (x_min <= px1)
+            & (px1 <= x_max)
+            & (min(start[1], end[1]) <= py1)
+            & (py1 <= max(start[1], end[1]))
+        )
+        mask2 = (
+            (y_min <= py2)
+            & (py2 <= y_max)
+            & (min(start[0], end[0]) <= px2)
+            & (px2 <= max(start[0], end[0]))
+        )
+        mask3 = (
+            (x_min <= px3)
+            & (px3 <= x_max)
+            & (min(start[1], end[1]) <= py3)
+            & (py3 <= max(start[1], end[1]))
+        )
+        mask4 = (
+            (y_min <= py4)
+            & (py4 <= y_max)
+            & (min(start[0], end[0]) <= px4)
+            & (px4 <= max(start[0], end[0]))
+        )
+
+        if (mask1 | mask2 | mask3 | mask4).any():
+            return False
+
         return True
+
+    def calculate_intersection_points(
+        self,
+        start: np.ndarray,
+        end: np.ndarray,
+        x_3: np.ndarray,
+        y_3: np.ndarray,
+        x_4: np.ndarray,
+        y_4: np.ndarray,
+    ) -> np.ndarray:
+        """
+        https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+        """
+
+        x_1, y_1 = start[0], start[1]
+        x_2, y_2 = end[0], end[1]
+
+        P_xy_denom = (x_1 - x_2) * (y_3 - y_4) - (y_1 - y_2) * (x_3 - x_4)
+
+        # reject if lines are parallel or coincident
+        if (P_xy_denom == 0).any():
+            return np.array([np.finfo(np.float64).max])
+
+        P_x_numer = (x_1 * y_2 - y_1 * x_2) * (x_3 - x_4) - (x_1 - x_2) * (
+            x_3 * y_4 - y_3 * x_4
+        )
+        P_y_numer = (x_1 * y_2 - y_1 * x_2) * (y_3 - y_4) - (y_1 - y_2) * (
+            x_3 * y_4 - y_3 * x_4
+        )
+
+        return np.array([P_x_numer / P_xy_denom, P_y_numer / P_xy_denom])
 
     def close_to_goal(self, pose: np.ndarray):
         """

@@ -55,14 +55,14 @@ class RRT:
                 pose = np.array(
                     [
                         self.space.goal[0] + r * np.cos(theta),
-                        self.space.goal[1] + r * np.sin(theta),
+                        self.space.goal[1] + r * np.sin(theta)
                     ]
                 )
             else:
                 pose = np.array(
                     [
                         np.random.uniform(0, self.space.dimensions[0]),
-                        np.random.uniform(0, self.space.dimensions[1]),
+                        np.random.uniform(0, self.space.dimensions[1])
                     ]
                 )
 

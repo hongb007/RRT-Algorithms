@@ -40,13 +40,13 @@ theta = 180
 turn_percent = 70.0
 
 # Set the percentage bias towards sampling the goal directly
-bias_percent = 10.0
+bias_percent = 5.0
 
 # Specify the total number of samples to be generated during RRT execution
 n_samples = 2000
 
 # Define the number of rectangular obstacles to be placed in the workspace
-n_rectangles = 50
+n_rectangles = 20
 
 # Specify the range of sizes for the rectangular obstacles:
 # First row: (min_width, max_width), Second row: (min_height, max_height)
