@@ -144,85 +144,112 @@ class space(object):
         y_min = np.random.rand(heights.size) * (self.dimensions[1] - heights)
         return x_min, y_min
 
-    def collision_free_path(self, start: np.ndarray, end: np.ndarray):
+    def collision_free_path(self, start: np.ndarray, end: np.ndarray) -> bool:
         """
-        Determines whether a straight-line path between two poses is free of collisions with all obstacles.
+        Determine whether a straight-line path between two points is free of collisions
+        with any axis-aligned rectangular obstacles in the environment.
 
-        Parameters:
-            start (np.ndarray), 1D array of length 2: The starting position coordinates.
-            end (np.ndarray), 1D array of length 2: The ending position coordinates.
+        Parameters
+        ----------
+        start : np.ndarray
+            A 1D array of shape (2,) representing the starting coordinates [x, y].
+        end : np.ndarray
+            A 1D array of shape (2,) representing the ending coordinates [x, y].
 
-        Returns:
-            bool: True if the path is collision-free; False otherwise.
+        Returns
+        -------
+        bool
+            True if the path does not intersect any obstacle; False otherwise.
         """
         x_min, y_min, x_max, y_max = self.rectangles
 
-        # Bottom left to bottom right of rect
+        # Compute intersection points between the path and each side of all rectangles.
+        # Each rectangle side is represented by its endpoints.
         intersection_points_line1 = self.calculate_intersection_points(
-            start, end, x_min, y_min, x_max, y_min
+            start,
+            end,
+            x_min,
+            y_min,
+            x_max,
+            y_min,  # Bottom side
         )
-        # Bottom right to top right of rect
         intersection_points_line2 = self.calculate_intersection_points(
-            start, end, x_max, y_min, x_max, y_max
+            start,
+            end,
+            x_max,
+            y_min,
+            x_max,
+            y_max,  # Right side
         )
-        # Top right to top left of rect
         intersection_points_line3 = self.calculate_intersection_points(
-            start, end, x_max, y_max, x_min, y_max
+            start,
+            end,
+            x_max,
+            y_max,
+            x_min,
+            y_max,  # Top side
         )
-        # Top left to bottom left of rect
         intersection_points_line4 = self.calculate_intersection_points(
-            start, end, x_min, y_max, x_min, y_min
+            start,
+            end,
+            x_min,
+            y_max,
+            x_min,
+            y_min,  # Left side
         )
 
-        # If start/end line is parallel or coincident with any rect side, reject path
-        max_val = np.array(np.finfo(np.float64).max)
+        # Define a sentinel value for non-intersecting lines (parallel or coincident).
+        max_val = np.finfo(np.float64).max
 
-        mask1 = intersection_points_line1 == max_val
-        mask2 = intersection_points_line2 == max_val
-        mask3 = intersection_points_line3 == max_val
-        mask4 = intersection_points_line4 == max_val
-
-        if (mask1 | mask2 | mask3 | mask4).any():
+        # Check if any intersection computation resulted in the sentinel value,
+        # indicating parallel or coincident lines, which are treated as collisions.
+        if (
+            np.any(intersection_points_line1 == max_val)
+            or np.any(intersection_points_line2 == max_val)
+            or np.any(intersection_points_line3 == max_val)
+            or np.any(intersection_points_line4 == max_val)
+        ):
             return False
 
-        # If intersection points are on the rect side, then reject path
-        px1 = intersection_points_line1[0]
-        py1 = intersection_points_line1[1]
-        px2 = intersection_points_line2[0]
-        py2 = intersection_points_line2[1]
-        px3 = intersection_points_line3[0]
-        py3 = intersection_points_line3[1]
-        px4 = intersection_points_line4[0]
-        py4 = intersection_points_line4[1]
+        # Extract x and y coordinates of intersection points for each rectangle side.
+        px1, py1 = intersection_points_line1
+        px2, py2 = intersection_points_line2
+        px3, py3 = intersection_points_line3
+        px4, py4 = intersection_points_line4
 
+        # Determine if any intersection point lies within the bounds of the corresponding
+        # rectangle side and between the start and end points of the path.
         mask1 = (
             (x_min <= px1)
             & (px1 <= x_max)
-            & (min(start[1], end[1]) <= py1)
-            & (py1 <= max(start[1], end[1]))
+            & (np.minimum(start[1], end[1]) <= py1)
+            & (py1 <= np.maximum(start[1], end[1]))
         )
         mask2 = (
             (y_min <= py2)
             & (py2 <= y_max)
-            & (min(start[0], end[0]) <= px2)
-            & (px2 <= max(start[0], end[0]))
+            & (np.minimum(start[0], end[0]) <= px2)
+            & (px2 <= np.maximum(start[0], end[0]))
         )
         mask3 = (
             (x_min <= px3)
             & (px3 <= x_max)
-            & (min(start[1], end[1]) <= py3)
-            & (py3 <= max(start[1], end[1]))
+            & (np.minimum(start[1], end[1]) <= py3)
+            & (py3 <= np.maximum(start[1], end[1]))
         )
         mask4 = (
             (y_min <= py4)
             & (py4 <= y_max)
-            & (min(start[0], end[0]) <= px4)
-            & (px4 <= max(start[0], end[0]))
+            & (np.minimum(start[0], end[0]) <= px4)
+            & (px4 <= np.maximum(start[0], end[0]))
         )
 
-        if (mask1 | mask2 | mask3 | mask4).any():
+        # If any intersection point lies within a rectangle side and between the start
+        # and end points of the path, the path is considered to be in collision.
+        if np.any(mask1 | mask2 | mask3 | mask4):
             return False
 
+        # If no collisions are detected, the path is considered collision-free.
         return True
 
     def calculate_intersection_points(
@@ -235,18 +262,38 @@ class space(object):
         y_4: np.ndarray,
     ) -> np.ndarray:
         """
-        https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+        Computes the intersection point between a line segment defined by `start` and `end`
+        and another line segment defined by endpoints (x_3, y_3) and (x_4, y_4), using
+        the standard line-line intersection formula.
+
+        If the lines are parallel or coincident (i.e., no unique intersection exists),
+        a large sentinel value is returned to indicate an invalid intersection.
+        
+        Calculation from: https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+
+        Parameters:
+            start (np.ndarray): 1D array of shape (2,) representing the first endpoint of the first line.
+            end (np.ndarray): 1D array of shape (2,) representing the second endpoint of the first line.
+            x_3, y_3 (np.ndarray): Coordinates of the first endpoint of the second line.
+            x_4, y_4 (np.ndarray): Coordinates of the second endpoint of the second line.
+
+        Returns:
+            np.ndarray: A 1D array of shape (2,) representing the (x, y) coordinates of the
+                        intersection point, or [max_float] if no intersection exists.
         """
 
+        # Unpack coordinates for readability
         x_1, y_1 = start[0], start[1]
         x_2, y_2 = end[0], end[1]
 
+        # Compute the denominator of the intersection formula
         P_xy_denom = (x_1 - x_2) * (y_3 - y_4) - (y_1 - y_2) * (x_3 - x_4)
 
-        # reject if lines are parallel or coincident
+        # If denominator is zero, the lines are parallel or coincident
         if (P_xy_denom == 0).any():
             return np.array([np.finfo(np.float64).max])
 
+        # Compute numerators for x and y coordinates of the intersection point
         P_x_numer = (x_1 * y_2 - y_1 * x_2) * (x_3 - x_4) - (x_1 - x_2) * (
             x_3 * y_4 - y_3 * x_4
         )
@@ -254,6 +301,7 @@ class space(object):
             x_3 * y_4 - y_3 * x_4
         )
 
+        # Return the intersection point
         return np.array([P_x_numer / P_xy_denom, P_y_numer / P_xy_denom])
 
     def close_to_goal(self, pose: np.ndarray):
