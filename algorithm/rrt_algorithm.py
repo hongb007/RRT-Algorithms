@@ -7,7 +7,7 @@ from algorithm.search_space import space
 
 
 class RRT:
-    def __init__(self, space: space, live: bool = True):
+    def __init__(self, space: space, live: bool = True, plot_result: bool = True):
         """
         Initialize the Rapidly-Exploring Random Tree (RRT) planner.
 
@@ -18,6 +18,7 @@ class RRT:
         self.space = space
         self.rrt_tree = rrt_tree(space)
         self.live = live
+        self.plot_result = plot_result
 
     def execute(self):
         """
@@ -37,7 +38,9 @@ class RRT:
                 - path: A list of node identifiers representing the path from start to goal, if found; otherwise, None.
         """
         plotter = LiveRRTPlot(self.space, live=self.live)
-        tree, path = None, None
+        path = None
+        found_path = False      
+        num_samples = 0
 
         # build until goal or no more samples
         for _ in range(self.space.n_samples):
@@ -70,24 +73,26 @@ class RRT:
             if steered is not None:
                 parent_id = self.rrt_tree.tree.get_node(nid).bpointer  # type: ignore
                 parent_pt = self.rrt_tree.tree.get_node(parent_id).data.array  # type: ignore
-                plotter.add_node(steered, parent_pt)
+                if self.live:
+                    plotter.add_node(steered, parent_pt)
                 if self.space.close_to_goal(steered):
-                    tree = self.rrt_tree.tree
                     path = self.rrt_tree.path_to_node(nid)  # type: ignore
+                    found_path = True
                     break
+        
+        num_samples = self.rrt_tree.tree.size() - 1
 
-        # if non-live, draw full tree
-        if not self.live:
-            tree = tree or self.rrt_tree.tree
-            plotter.plot_tree(tree)
+        # If plot, draw full tree at the end
+        if self.plot_result:
+            plotter.plot_tree(self.rrt_tree.tree, num_samples)
 
-        # draw path if found
-        if path:
+        # draw path if found and if plot
+        if path and self.plot_result:
             coords = [self.rrt_tree.tree.get_node(pid).data.array for pid in path]  # type: ignore
             plotter.plot_path(coords)
 
-        # finally—block on the window in non-live mode
-        if not self.live:
+        # finally—block on the window in plot-result mode
+        if self.plot_result:
             plt.show(block=True)
 
-        return tree, path
+        return found_path, num_samples

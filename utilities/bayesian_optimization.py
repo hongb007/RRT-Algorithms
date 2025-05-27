@@ -1,28 +1,9 @@
-import argparse
 from algorithm.rrt_algorithm import RRT
 from algorithm.search_space import space
 import numpy as np
 
 # Set the random seed for reproducibility of results
 np.random.seed(1)
-
-# Parse command-line arguments
-parser = argparse.ArgumentParser(
-    description="Run the RRT algorithm with optional live plotting and ending plot."
-)
-parser.add_argument(
-    "--live",
-    type=lambda x: x.lower() == "true",
-    default=True,
-    help="Enable live plotting (True or False). Default is True.",
-)
-parser.add_argument(
-    "--plot_result",
-    type=lambda x: x.lower() == "true",
-    default=True,
-    help="Enable plotting result (True or False). Default is True.",
-)
-args = parser.parse_args()
 
 # Define the dimensions of the 2D workspace (width, height)
 dimensions = np.array([100, 100])
@@ -76,7 +57,7 @@ rrt_space = space(
 # Instantiate the RRT algorithm with the configured search space
 # The 'live' parameter enables real-time visualization during execution
 # The 'plot_result' parameter enables plotting after execution of the algorithm
-rrt_algorithm = RRT(rrt_space, live=args.live, plot_result=args.plot_result)
+rrt_algorithm = RRT(rrt_space, live=False, plot_result=False)
 
 # Execute the RRT algorithm
 # Returns:

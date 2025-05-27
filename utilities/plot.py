@@ -26,7 +26,7 @@ class LiveRRTPlot:
         self.space = space
 
         # Sample counter excludes start/goal
-        self.sample_count = 0
+        self.num_samples = 0
 
         # Set interactive plotting mode
         if self.live:
@@ -96,7 +96,7 @@ class LiveRRTPlot:
         self.sample_text = self.ax.text(
             1.06,
             0.7,
-            f"Num Samples: {self.sample_count}",
+            f"Num Samples: {self.num_samples}",
             transform=self.ax.transAxes,
             fontsize=10,
             verticalalignment="top",
@@ -138,8 +138,8 @@ class LiveRRTPlot:
             return
 
         # Increment sample counter and update text
-        self.sample_count += 1
-        self.sample_text.set_text(f"Num Samples: {self.sample_count}")
+        self.num_samples += 1
+        self.sample_text.set_text(f"Num Samples: {self.num_samples}")
 
         # Draw connection line
         (line,) = self.ax.plot(
@@ -160,9 +160,10 @@ class LiveRRTPlot:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
-    def plot_tree(self, tree: Any):
+    def plot_tree(self, tree: Any, num_samples: int):
         """
-        Plot all existing nodes and edges from a treelib Tree (non-live mode).
+        Plot all existing nodes and edges from a treelib Tree (non-live mode)
+        and update sample count
 
         Parameters:
         - tree (Any): Tree containing nodes with 'data' array attributes.
@@ -188,6 +189,13 @@ class LiveRRTPlot:
                 linewidth=1,
             )
             self.ax.plot(child_pt[0], child_pt[1], "bo", markersize=4, linestyle="None")
+        
+        # After algorithm finishes, update text to show final sample count
+        if self.live:
+            self.sample_text.set_text(f"Num Samples: {self.num_samples}")
+        else: 
+            self.sample_text.set_text(f"Num Samples: {num_samples}")
+        self.sample_text.set_position(xy=(1.06, 0.65))
 
     def plot_path(self, path_coords: List[np.ndarray]):
         """
@@ -233,10 +241,6 @@ class LiveRRTPlot:
             linestyle="None",
             label="Start",
         )
-
-        # After final path, update text to show final sample count
-        self.sample_text.set_text(f"Num Samples: {self.sample_count}")
-        self.sample_text.set_position(xy=(1.06, 0.65))
 
         # Draw and block to keep window open
         self.fig.canvas.draw()
