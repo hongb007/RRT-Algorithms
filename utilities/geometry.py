@@ -15,7 +15,6 @@ def dist_between_points(a, b):
     distance = np.linalg.norm(np.array(b) - np.array(a))
     return distance
 
-
 def steer(
     parent: np.ndarray,
     sample: np.ndarray,
@@ -25,74 +24,52 @@ def steer(
     turn_chance: float,
 ) -> np.ndarray:
     """
-    Computes a new node position by steering a sample node to be within the step size of the parent node, 
-    constrained by a maximum step size. Furthermore, this method includes a probabilistic adjustment 
-    toward the goal direction within a specified angular constraint.
-
-    Parameters:
-    -----------
-    parent : np.ndarray, shape (1,2)
-        Coordinates of the current node (2D vector).
-    sample : np.ndarray, shape (1,2)
-        Coordinates of the randomly sampled node in the space (2D vector).
-    step_size : float
-        Maximum distance to move from the parent node towards the sample.
-    goal : np.ndarray
-        Coordinates of the goal node (2D vector).
-    theta_deg : float
-        Maximum allowable steering angle in degrees; defines the angular constraint.
-    turn_chance : float
-        Probability (between 0 and 1) of adjusting the steering direction towards the goal.
-
-    Returns:
-    --------
-    np.ndarray
-        Coordinates of the new node after steering (2D vector).
+    Steer from `parent` toward `sample` by at most `step_size`, 
+    but with probability `turn_chance` rotate the direction
+    by up to ±(theta_deg/2) toward the goal.
     """
 
-    # Convert half of the maximum steering angle from degrees to radians
+    # half-angle in radians
     max_theta = np.deg2rad(theta_deg / 2)
 
-    # Compute the vector from the parent node to the sample node
+    # vector toward sample
     v = sample - parent
-    norm_v = np.linalg.norm(v)
-    if norm_v == 0:
-        # If the sample coincides with the parent, no movement is needed
-        return parent
+    dist_to_sample = np.linalg.norm(v)
+    if dist_to_sample == 0:
+        return parent.copy()
 
-    # Normalize the vector to obtain the direction
-    dir_v = v / norm_v
+    dir_v = v / dist_to_sample
 
-    # Determine whether to adjust the steering direction towards the goal
-    chance = np.random.uniform(0, 1)
-    if chance <= turn_chance:
-        # Compute the vector from the parent node to the goal
+    # with some chance, bias the direction toward the goal
+    if np.random.rand() <= turn_chance:
         g = goal - parent
-        dir_g = g / np.linalg.norm(g)
+        dist_to_goal = np.linalg.norm(g)
+        if dist_to_goal > 0:
+            dir_g = g / dist_to_goal
 
-        # Calculate the angle between dir_v and dir_g
-        dot = np.clip(np.dot(dir_v, dir_g), -1.0, 1.0)
-        angle = np.arccos(dot)
+            # angle between dir_v and dir_g
+            dot = np.clip(np.dot(dir_v, dir_g), -1.0, 1.0)
+            angle_between = np.arccos(dot)
 
-        # Determine the sign of the angle using the cross product
-        cross = np.cross(np.append(dir_g, 0), np.append(dir_v, 0))[2]
-        sign = np.sign(cross)
+            # if that angle is too large, rotate dir_v by ±max_theta toward dir_g
+            if angle_between > max_theta:
+                # determine whether to rotate CW or CCW
+                cross_z = np.cross(np.append(dir_v, 0), np.append(dir_g, 0))[2]
+                sign = np.sign(cross_z)
 
-        # If the angle exceeds the maximum allowed, rotate dir_v towards dir_g
-        if angle > max_theta:
-            angle = max_theta * sign
-            # Construct the 2D rotation matrix
-            R = np.array(
-                [[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]]
-            )
-            # Rotate dir_g by the constrained angle to obtain the new direction
-            dir_v = R.dot(dir_g)
+                # build rotation matrix for ±max_theta
+                theta = sign * max_theta
+                R = np.array([
+                    [np.cos(theta), -np.sin(theta)],
+                    [np.sin(theta),  np.cos(theta)]
+                ])
 
-    # Determine the distance to move: the lesser of step_size and the distance to the sample
-    dist = min(step_size, norm_v)  # type: ignore
+                # rotate the original sample‐direction
+                dir_v = R.dot(dir_v)
 
-    # Compute and return the new node position
-    return parent + dist * dir_v
+    # move by up to step_size along dir_v
+    step = min(step_size, dist_to_sample) # type: ignore
+    return parent + step * dir_v
 
 
 # Not used

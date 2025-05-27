@@ -94,5 +94,7 @@ class RRT:
         # finally—block on the window in plot-result mode
         if self.plot_result:
             plt.show(block=True)
+            
+        plt.close()
 
         return found_path, num_samples
