@@ -37,16 +37,16 @@ goal = np.array([99, 99])
 goal_radius = 3
 
 # Set the maximum distance the tree can extend in one iteration
-step_size = 34.64524452002799
+step_size = 9.16435340729732
 
 # Define the maximum turning angle in degrees
-theta = 9.943272447990841
+theta = 209.32300904849086
 
 # Set the chance to turn a sample into the theta range from goal to parent node
-turn_percent = 28.26029340885458
+turn_percent = 88.07157265016374
 
 # Set the percentage bias towards sampling the goal directly
-bias_percent = 63.979852989108245
+bias_percent = 2.266512743351795
 
 # Specify the total number of samples to be generated during RRT execution
 n_samples = 2000

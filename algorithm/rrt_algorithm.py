@@ -62,11 +62,11 @@ class RRT:
             # simulating chance for generating sample near goal
             chance = np.random.uniform(0, 1)
             if chance <= self.bias_chance:
-                # Non-uniformly generating samples radius of largest obstacle size. More dense toward center
+                # Non-uniformly generating samples radius of largest obstacle size / 2. More dense toward center
                 # https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
                 r = np.maximum(
                     self.space.rect_sizes[0][1], self.space.rect_sizes[1][1]
-                ) * np.random.uniform(0, 1)
+                ) / 2 * np.random.uniform(0, 1)
                 theta = np.random.uniform(0, 1) * 2 * np.pi
 
                 pose = np.array(
