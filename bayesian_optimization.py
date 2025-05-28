@@ -4,8 +4,7 @@ from bayes_opt import BayesianOptimization
 from bayes_opt.util import load_logs
 from bayes_opt.logger import JSONLogger
 from bayes_opt.event import Events
-
-# Assuming your RRT and space classes are in these locations
+import time
 from algorithm.rrt_algorithm import RRT
 from algorithm.search_space import space
 
@@ -13,11 +12,43 @@ from algorithm.search_space import space
 # This will be updated in each Bayesian Optimization session.
 current_rrt_space_config = None
 
-
 def black_box_function(step_size, theta, turn_percent, bias_percent):
     """
-    Function with unknown internals we wish to maximize (actually minimize num_samples).
-    It uses the global 'current_rrt_space_config'.
+    Evaluates the performance of the RRT algorithm for given parameters.
+
+    This function serves as the objective for the Bayesian Optimization. It
+    instantiates and executes the RRT algorithm with the provided parameters
+    and a pre-configured search space. The goal is to minimize the number of
+    samples (nodes) required to find a path. Since Bayesian Optimization is
+    a maximization algorithm, the negative of the number of samples is returned.
+    A significant penalty is applied if no path is found.
+
+    The `current_rrt_space_config` global variable must be initialized
+    before calling this function.
+
+    Parameters
+    ----------
+    step_size : float
+        The maximum distance for a new node to extend from its nearest neighbor.
+    theta : float
+        The angular range (in degrees) for steering the RRT expansion.
+    turn_percent : float
+        The probability (0-100) of performing a 'turn' action during RRT expansion.
+    bias_percent : float
+        The probability (0-100) of biasing the RRT expansion towards the goal.
+
+    Returns
+    -------
+    float
+        The negative of the number of samples taken by the RRT algorithm if a
+        path is found. Returns a large negative penalty if no path is found,
+        making it undesirable for the optimizer.
+
+    Raises
+    ------
+    ValueError
+        If `current_rrt_space_config` is not initialized (i.e., is None)
+        before the function is called.
     """
     global current_rrt_space_config  # Explicitly state it's using the global
     if current_rrt_space_config is None:
@@ -64,11 +95,11 @@ if __name__ == "__main__":
     dimensions = np.array([100, 100])
     start_pos = np.array(
         [1, 1]
-    )  # Renamed from 'start' to avoid conflict if 'start' is a keyword
-    goal_pos = np.array([99, 99])  # Renamed from 'goal'
+    )  
+    goal_pos = np.array([99, 99]) 
     goal_radius = 3
     n_rrt_samples = 1000  # Max samples/iterations for the RRT algorithm itself
-    n_rectangles = 70
+    n_rectangles = 65
     rect_sizes = np.array([[5, 15], [5, 15]])
 
     # --- Bayesian Optimization Configuration ---
@@ -76,14 +107,14 @@ if __name__ == "__main__":
 
     # Bounded region of parameter space for Bayesian Optimization
     pbounds = {
-        "step_size": (0.1, 10.0),  # Min step_size > 0
+        "step_size": (0.1, 8.0),  # Min step_size > 0
         "theta": (0.0, 360.0),
         "turn_percent": (0.0, 100.0),
         "bias_percent": (0.0, 50.0),  # Max bias can be adjusted
     }
 
-    n_bo_sessions = 10  # Number of Bayesian Optimization meta-iterations (sessions)
-    # Initial random points for the optimizer in the *first ever* session (if no log exists)
+    n_bo_sessions = 5  # Number of Bayesian Optimization meta-iterations (sessions)
+    # Initial random points for the optimizer in the first session (if no log exists)
     initial_bo_points_on_first_run = 5
     # Number of optimization iterations per BO session (after initial points)
     n_bo_iterations_per_session = 50  # Adjust as needed (e.g., to 50-100 for real runs)
@@ -98,9 +129,9 @@ if __name__ == "__main__":
     )
 
     # Setup the JSONLogger to append to the cumulative log file.
-    # This logger will save all points evaluated by any optimizer it's subscribed to.
+    # Saves all points evaluated by any optimizer it's subscribed to.
     logger = JSONLogger(path=cumulative_log_path)
-    # Subscribe the logger to the optimizer. This should be done once.
+    # Subscribe the logger to the optimizer.
     optimizer.subscribe(Events.OPTIMIZATION_STEP, logger)
 
     # Load all previously logged points into the optimizer before the first session
@@ -108,10 +139,17 @@ if __name__ == "__main__":
     if os.path.exists(cumulative_log_path):
         print(f"Loading existing logs from: {cumulative_log_path}")
         load_logs(optimizer, logs=[cumulative_log_path])
-        print(f"Optimizer space now has {len(optimizer.space)} points after loading logs.")
+        print(
+            f"Optimizer space now has {len(optimizer.space)} points after loading logs."
+        )
     else:
-        print(f"No existing log file found at {cumulative_log_path}. A new log will be created.")
+        print(
+            f"No existing log file found at {cumulative_log_path}. A new log will be created."
+        )
 
+    start = time.perf_counter()
+    print("\nStarting timer.")
+    
     for i in range(n_bo_sessions):
         print(f"\n--- Bayesian Optimization Session {i + 1}/{n_bo_sessions} ---")
 
@@ -154,7 +192,9 @@ if __name__ == "__main__":
 
         print(f"--- End of Session {i + 1} ---")
         if optimizer.max:
-            print("Best parameters found by this optimizer instance (current overall best):")
+            print(
+                "Best parameters found by this optimizer instance (current overall best):"
+            )
             print(optimizer.max)
         else:
             print(
@@ -163,30 +203,38 @@ if __name__ == "__main__":
         print(
             f"Total unique points known to this optimizer instance: {len(optimizer.space)}"
         )
+        
+    end = time.perf_counter()
+    print(f"\nTotal time taken to run: {(end - start) / 60} minutes")
 
-    print("\n--- Overall Best Result (from the final optimizer instance) ---")
+    print("\n--- Examining Best Point and its Neighbors ---")
     if optimizer.max:
-        print("Overall best result from the optimizer's collected data:")
-        print(optimizer.max)
-    else:
-        print("No overall best result found by the optimizer.")
+        best_target = optimizer.max["target"]
+        best_params = optimizer.max["params"]
+        print(f"Overall Best Target: {best_target} with params: {best_params}")
 
-    # You can also explicitly load and print the overall best from the log file
-    # for verification, though the final 'optimizer.max' should reflect this.
-    print("\n--- Verification: Overall Best Result (loaded directly from cumulative log) ---")
-    if os.path.exists(cumulative_log_path):
-        overall_optimizer_verifier = BayesianOptimization(
-            f=None, pbounds=pbounds, random_state=999
+        # Find points close to the best one in terms of target value
+        tolerance = 30 # Within 30 samples of best target
+        nearby_good_points = []
+        for res in optimizer.res:
+            if (
+                abs(res["target"] - best_target) < tolerance
+                and not (res["target"] == best_target)
+                and not (res["params"] == best_params)
+            ):
+                nearby_good_points.append(res)
+
+        print(
+            f"\nFound {len(nearby_good_points)} points with target values close to the best (within {tolerance:.2f}):"
         )
-        load_logs(overall_optimizer_verifier, logs=[cumulative_log_path])
-        if overall_optimizer_verifier.max:
-            print("Overall best result from cumulative log file:")
-            print(overall_optimizer_verifier.max)
-        else:
+        # Sort by target value (descending)
+        nearby_good_points.sort(key=lambda x: x["target"], reverse=True)
+
+        for i, point in enumerate(
+            nearby_good_points[:10]
+        ):  # Print top 10 similar points
             print(
-                "Could not determine overall max from the log file (log might be empty or contain no valid iterations)."
+                f"  {i + 1}. Target: {point['target']:.2f}, Params: {point['params']}"
             )
     else:
-        print(
-            f"Cumulative log file {cumulative_log_path} not found. Cannot perform direct log verification."
-        )
+        print("No overall best result to examine.")
