@@ -12,8 +12,7 @@ def dist_between_points(a, b):
     Returns:
         float: Euclidean distance between points a and b.
     """
-    distance = np.linalg.norm(np.subtract(b, a))
-    return distance
+    return np.linalg.norm(np.subtract(b, a)) 
 
 def steer(
     parent: np.ndarray,
@@ -32,13 +31,13 @@ def steer(
     # half-angle in radians
     max_theta = np.deg2rad(theta_deg / 2)
 
-    # vector toward sample
-    v = sample - parent
-    dist_to_sample = np.linalg.norm(v)
+    # vector toward sample from parent
+    s = sample - parent
+    dist_to_sample = np.linalg.norm(s)
     if dist_to_sample == 0:
         return parent.copy()
 
-    dir_v = v / dist_to_sample
+    dir_s = s / dist_to_sample
 
     # with some chance, bias the direction toward the goal
     if np.random.rand() <= turn_chance:
@@ -48,13 +47,13 @@ def steer(
             dir_g = g / dist_to_goal
 
             # angle between dir_v and dir_g
-            dot = np.clip(np.dot(dir_v, dir_g), -1.0, 1.0)
+            dot = np.clip(np.dot(dir_s, dir_g), -1.0, 1.0)
             angle_between = np.arccos(dot)
 
             # if that angle is too large, rotate dir_v by ±max_theta toward dir_g
             if angle_between > max_theta:
                 # determine whether to rotate CW or CCW
-                cross_z = np.cross(np.append(dir_v, 0), np.append(dir_g, 0))[2]
+                cross_z = np.cross(np.append(dir_s, 0), np.append(dir_g, 0))[2]
                 sign = np.sign(cross_z)
 
                 # build rotation matrix for ±max_theta
@@ -65,11 +64,10 @@ def steer(
                 ])
 
                 # rotate the original sample‐direction
-                dir_v = R.dot(dir_v)
+                dir_s = R.dot(dir_s)
 
     # move by up to step_size along dir_v
-    step = step_size # type: ignore
-    return parent + step * dir_v
+    return parent + step_size * dir_s
 
 
 # Not used
