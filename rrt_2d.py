@@ -4,7 +4,7 @@ from algorithm.search_space import space
 import numpy as np
 
 # Set the random seed for reproducibility of results
-np.random.seed(1)
+np.random.seed(2)
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
@@ -52,7 +52,7 @@ bias_percent = 20.8
 n_samples = 2000
 
 # Define the number of rectangular obstacles to be placed in the workspace
-n_rectangles = 75
+n_rectangles = 65
 
 # Specify the range of sizes for the rectangular obstacles:
 # First row: (min_width, max_width), Second row: (min_height, max_height)
