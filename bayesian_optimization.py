@@ -12,6 +12,7 @@ from algorithm.search_space import space
 # This will be updated in each Bayesian Optimization session.
 current_rrt_space_config = None
 
+
 def black_box_function(step_size, theta, turn_percent, bias_percent):
     """
     Evaluates the performance of the RRT algorithm for given parameters.
@@ -93,13 +94,11 @@ if __name__ == "__main__":
 
     # --- RRT Configuration Parameters (used to create `current_rrt_space_config`) ---
     dimensions = np.array([100, 100])
-    start_pos = np.array(
-        [1, 1]
-    )  
-    goal_pos = np.array([99, 99]) 
+    start_pos = np.array([1, 1])
+    goal_pos = np.array([99, 99])
     goal_radius = 3
     n_rrt_samples = 1000  # Max samples/iterations for the RRT algorithm itself
-    n_rectangles = 65
+    n_rectangles = 75
     rect_sizes = np.array([[5, 15], [5, 15]])
 
     # --- Bayesian Optimization Configuration ---
@@ -113,11 +112,13 @@ if __name__ == "__main__":
         "bias_percent": (0.0, 50.0),  # Max bias can be adjusted
     }
 
-    n_bo_sessions = 5  # Number of Bayesian Optimization meta-iterations (sessions)
+    n_bo_sessions = 2  # Number of Bayesian Optimization meta-iterations (sessions)
     # Initial random points for the optimizer in the first session (if no log exists)
     initial_bo_points_on_first_run = 5
     # Number of optimization iterations per BO session (after initial points)
-    n_bo_iterations_per_session = 50  # Adjust as needed (e.g., to 50-100 for real runs)
+    n_bo_iterations_per_session = (
+        20  # Adjust as needed (e.g., to 50-100 for real runs)
+    )
 
     # Initialize the optimizer outside the loop to maintain its state across sessions
     # We will load logs into this single optimizer instance.
@@ -149,7 +150,7 @@ if __name__ == "__main__":
 
     start = time.perf_counter()
     print("\nStarting timer.")
-    
+
     for i in range(n_bo_sessions):
         print(f"\n--- Bayesian Optimization Session {i + 1}/{n_bo_sessions} ---")
 
@@ -195,7 +196,15 @@ if __name__ == "__main__":
             print(
                 "Best parameters found by this optimizer instance (current overall best):"
             )
-            print(optimizer.max)
+            target = optimizer.max["target"]
+            params = optimizer.max["params"]
+            
+            print(f"  Target: {target:.2f}")
+            # Rounding best_params for printing
+            rounded_best_params = {k: round(v, 4) for k, v in params.items()}
+            print("  Parameters (rounded to 4 decimal places):")
+            for k, v in rounded_best_params.items():
+                print(f"    - {k}: {v}")
         else:
             print(
                 "No maximum found by this optimizer instance (perhaps no points were evaluated)."
@@ -203,38 +212,66 @@ if __name__ == "__main__":
         print(
             f"Total unique points known to this optimizer instance: {len(optimizer.space)}"
         )
-        
-    end = time.perf_counter()
-    print(f"\nTotal time taken to run: {(end - start) / 60} minutes")
 
-    print("\n--- Examining Best Point and its Neighbors ---")
+    print("\n--- Examining Optimization Results ---")
+    
+    # --- Non-Optimized RRT Space Parameters ---
+    print("\n### Fixed RRT Space Parameters")
+    print(f"  Dimensions: {dimensions}")
+    print(f"  Start Position: {start_pos}")
+    print(f"  Goal Position: {goal_pos}")
+    print(f"  Goal Radius: {goal_radius}")
+    print(f"  Max RRT Samples per iteration (n_samples): {n_rrt_samples}")
+    print(f"  Number of Rectangle Obstacles (n_rectangles): {n_rectangles}")
+    print(f"  Rectangle Sizes( [[min_width, max_width] [min_height, max_height]]): {str(rect_sizes).replace('\n', '')}")
+    print("-" * 40) # A separator for visual clarity
+
     if optimizer.max:
         best_target = optimizer.max["target"]
         best_params = optimizer.max["params"]
-        print(f"Overall Best Target: {best_target} with params: {best_params}")
+
+        print("\n### Overall Best Point")
+        print(f"  Target: {best_target:.2f}")
+        # Rounding best_params for printing
+        rounded_best_params = {k: round(v, 4) for k, v in best_params.items()}
+        print("  Parameters (rounded to 4 decimal places):")
+        for k, v in rounded_best_params.items():
+            print(f"    - {k}: {v}")
 
         # Find points close to the best one in terms of target value
-        tolerance = 30 # Within 30 samples of best target
+        tolerance = 30  # Within 30 units of best target
         nearby_good_points = []
         for res in optimizer.res:
+            # Check if the current point is not the exact best point to avoid duplicate reporting
+            # And ensure it's within the tolerance range
             if (
                 abs(res["target"] - best_target) < tolerance
-                and not (res["target"] == best_target)
-                and not (res["params"] == best_params)
+                and not (res["target"] == best_target and res["params"] == best_params)
             ):
                 nearby_good_points.append(res)
 
-        print(
-            f"\nFound {len(nearby_good_points)} points with target values close to the best (within {tolerance:.2f}):"
-        )
         # Sort by target value (descending)
         nearby_good_points.sort(key=lambda x: x["target"], reverse=True)
 
-        for i, point in enumerate(
-            nearby_good_points[:10]
-        ):  # Print top 10 similar points
-            print(
-                f"  {i + 1}. Target: {point['target']:.2f}, Params: {point['params']}"
-            )
+        print(f"\n### Top {min(10, len(nearby_good_points))} Nearby Good Points (within {tolerance:.2f} of best)")
+        if nearby_good_points:
+            print("(Parameters rounded to 4 decimal places)")
+            for i, point in enumerate(nearby_good_points[:10]):  # Print top 10 similar points
+                # Rounding parameters for printing
+                rounded_point_params = {k: round(v, 4) for k, v in point['params'].items()}
+                print(f"\n  {i + 1}.")
+                print(f"    Target: {point['target']:.2f}")
+                print("    Parameters:")
+                for k, v in rounded_point_params.items():
+                    print(f"      - {k}: {v}")
+        else:
+            print("  No other points found within the specified tolerance.")
     else:
-        print("No overall best result to examine.")
+        print("No optimization results to examine.")
+        
+    end = time.perf_counter()
+    total_seconds = end - start
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+    seconds = total_seconds % 60
+    print(f"\nTotal time taken to run: {hours}h {minutes}m {seconds:.2f}s")

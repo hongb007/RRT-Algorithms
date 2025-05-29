@@ -4,7 +4,7 @@ from algorithm.search_space import space
 import numpy as np
 
 # Set the random seed for reproducibility of results
-np.random.seed(3)
+np.random.seed(4)
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
@@ -37,16 +37,16 @@ goal = np.array([99, 99])
 goal_radius = 3
 
 # Set the maximum distance the tree can extend in one iteration
-step_size = 7.04
+step_size = 7.395913334762972
 
 # Define the maximum turning angle in degrees
-theta = 180.0
+theta = 238.9678587516086
 
 # Set the chance to turn a sample into the theta range from goal to parent node
-turn_percent = 65.0
+turn_percent = 64.50326182105157
 
 # Set the percentage bias towards sampling the goal directly
-bias_percent = 20.8
+bias_percent = 8.718183537094998
 
 # Specify the total number of samples to be generated during RRT execution
 n_samples = 2000
@@ -88,5 +88,5 @@ rrt_algorithm = RRT(
 # - num_samples: number of samples it took to find a path to the goal
 found_path, num_samples, n_tries_to_place_node = rrt_algorithm.execute()
 
-print(found_path)
-print(num_samples)
+print(f"Found Path: {found_path}")
+print(f"Number of samples: {num_samples}")
